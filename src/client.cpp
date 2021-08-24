@@ -4,8 +4,8 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include "../generated/helloworld.pb.h"
-#include "../generated/helloworld.grpc.pb.h"
+#include "../_generated/helloworld.pb.h"
+#include "../_generated/helloworld.grpc.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;

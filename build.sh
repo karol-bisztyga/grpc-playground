@@ -2,5 +2,11 @@
 
 set -e
 
-rm bin/* || echo "no binaries, skipping"
-cmake . && make -j
+mkdir cmake/build || echo "build folder exists, skipping"
+cd cmake/build
+cmake ../..
+make
+
+cd ../..
+
+echo "ALL GOOD"

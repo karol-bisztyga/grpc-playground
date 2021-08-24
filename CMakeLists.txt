@@ -41,13 +41,11 @@ endif()
 get_filename_component(hw_proto "./protos/helloworld.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
-file(GLOB GENERATED_CODE "./server/*.cc")
+file(GLOB GENERATED_CODE "./cmake/build/_generated/*.cc")
 
 include_directories(
-  ./generated
+  ./cmake/build/_generated
 )
-
-file(GLOB GENERATED_CODE "generated/*.cc")
 
 # CLIENT
 add_executable(

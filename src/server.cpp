@@ -6,8 +6,8 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
-#include "../generated/helloworld.pb.h"
-#include "../generated/helloworld.grpc.pb.h"
+#include "../_generated/helloworld.pb.h"
+#include "../_generated/helloworld.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;

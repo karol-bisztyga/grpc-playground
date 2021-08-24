@@ -1,6 +1,14 @@
 #!/bin/bash
 
-# protoc -I=./protos --cpp_out=./cpp_out --grpc_out=grpc_out --plugin=protoc-gen-grpc=`which grpc_cpp_plugin` ./protos/helloworld.proto
+set -e
 
-protoc -I=./protos --cpp_out=generated --grpc_out=generated --plugin=protoc-gen-grpc=`which grpc_cpp_plugin` ./protos/helloworld.proto
+mkdir -p cmake/build 2> /dev/null || echo "build folder exists, skipping"
+cd cmake/build
 
+mkdir _generated  2> /dev/null || echo "generated folder exists, skipping"
+
+protoc -I=../../protos --cpp_out=_generated --grpc_out=_generated --plugin=protoc-gen-grpc=`which grpc_cpp_plugin` ../../protos/helloworld.proto
+
+cd ../..
+
+echo "ALL GOOD"
