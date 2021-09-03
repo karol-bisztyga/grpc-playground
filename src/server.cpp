@@ -5,30 +5,28 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
-#include "../_generated/helloworld.pb.h"
-#include "../_generated/helloworld.grpc.pb.h"
+#include "../_generated/ping.pb.h"
+#include "../_generated/ping.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
-using helloworld::Greeter;
-using helloworld::HelloReply;
-using helloworld::HelloRequest;
+using ping::PingService;
+using ping::PingReply;
+using ping::PingRequest;
 
 // Logic and data behind the server's behavior.
-class GreeterServiceImpl final : public Greeter::Service {
-  Status SayHello(ServerContext* context, const HelloRequest* request,
-                  HelloReply* reply) override {
-    std::string prefix("Hello ");
-    reply->set_message(prefix + request->name());
+class PingServiceImpl final : public PingService::Service {
+  Status Ping(ServerContext* context, const PingRequest* request,
+                  PingReply* reply) override {
     return Status::OK;
   }
 };
 
 void RunServer() {
   std::string server_address("localhost:50051");
-  GreeterServiceImpl service;
+  PingServiceImpl service;
 
   grpc::EnableDefaultHealthCheckService(true);
   ServerBuilder builder;
