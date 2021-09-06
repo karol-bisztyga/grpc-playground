@@ -49,14 +49,14 @@ include_directories(
 
 # CLIENT
 add_executable(
-  example_client
+  client
 
   ${GENERATED_CODE}
   src/client.cpp
 )
 
 target_link_libraries(
-  example_client
+  client
   
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
@@ -64,20 +64,20 @@ target_link_libraries(
 )
 
 install(
-  TARGETS example_client
+  TARGETS client
   RUNTIME DESTINATION bin/
 )
 
 #SERVER
 add_executable(
-  example_server
+  server
 
   ${GENERATED_CODE}
   src/server.cpp
 )
 
 target_link_libraries(
-  example_server
+  server
   
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
@@ -85,6 +85,6 @@ target_link_libraries(
 )
 
 install(
-  TARGETS example_server
+  TARGETS server
   RUNTIME DESTINATION bin/
 )
