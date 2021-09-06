@@ -3,11 +3,8 @@ syntax = "proto3";
 package ping;
 
 service PingService {
-  rpc Ping (PingRequest) returns (PingReply) {}
+  rpc Ping (stream PingRoute) returns (stream PingRoute) {}
 }
 
-message PingRequest {
-}
-
-message PingReply {
+message PingRoute {
 }

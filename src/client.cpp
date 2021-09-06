@@ -9,9 +9,9 @@
 
 using grpc::Channel;
 using grpc::ClientContext;
+using grpc::ClientReaderWriter;
 using grpc::Status;
-using ping::PingReply;
-using ping::PingRequest;
+using ping::PingRoute;
 using ping::PingService;
 
 class PingClient {
@@ -21,30 +21,30 @@ class PingClient {
 
    // Assembles the client's payload, sends it and presents the response back
    // from the server.
-   bool Ping()
-   {
-     // Data we are sending to the server.
-     PingRequest request;
+  void Ping()
+  {
+    ClientContext context;
+    std::shared_ptr<ClientReaderWriter<PingRoute, PingRoute>> stream(stub_->Ping(&context));
+    PingRoute route;
+    // std::cout << "here client ping #begin" << std::endl;
+    size_t limit = 5, count = 0;
+    stream->Write(route);
+    while(stream->Read(&route))
+    {
+      std::cout << "here client ping #read " << count << std::endl;
+      if (++count > limit) {
+        break;
+      }
+      stream->Write(route);
+    }
 
-     // Container for the data we expect from the server.
-     PingReply reply;
-
-     // Context for the client. It could be used to convey extra information to
-     // the server and/or tweak certain RPC behaviors.
-     ClientContext context;
-     // The actual RPC.
-     Status status = stub_->Ping(&context, request, &reply);
-     // Act upon its status.
-     if (status.ok())
-     {
-       return true;
-     }
-     else
-     {
-       std::cout << status.error_code() << ": " << status.error_message()
-                 << std::endl;
-       return false;
-     }
+    std::cout << "here client ping #finish" << std::endl;
+    Status status = stream->Finish();
+    std::cout << "here client ping #finish-2: " << int(status.error_code()) << std::endl;
+    if (!status.ok())
+    {
+      std::cout << "ERROR => " << status.error_code() << ": " << status.error_message() << std::endl;
+    }
   }
 
  private:
@@ -52,12 +52,17 @@ class PingClient {
 };
 
 int main(int argc, char** argv) {
+  if (argc != 2) {
+    std::cout << "please provide an argument with a client id" << std::endl;
+    return 1;
+  }
+  size_t id = (size_t)atoi(argv[1]);
+  std::cout << "client start, id: " << id << std::endl;
   std::string target_str = "localhost:50051";
-  
+
   PingClient client(
       grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
-  bool response = client.Ping();
-  std::cout << "ping response: " << response << std::endl;
+  client.Ping();
 
   return 0;
 }
