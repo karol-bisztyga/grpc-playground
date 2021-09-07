@@ -11,31 +11,36 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::ClientReaderWriter;
 using grpc::Status;
-using ping::PingRoute;
+using ping::PingRequest;
+using ping::PingResponse;
 using ping::PingService;
+using ping::ResponseStatus;
 
 class PingClient {
  public:
-   PingClient(std::shared_ptr<Channel> channel)
-       : stub_(PingService::NewStub(channel)) {}
+   PingClient(std::shared_ptr<Channel> channel, size_t id)
+       : stub_(PingService::NewStub(channel)), id(id) {}
 
    // Assembles the client's payload, sends it and presents the response back
    // from the server.
   void Ping()
   {
     ClientContext context;
-    std::shared_ptr<ClientReaderWriter<PingRoute, PingRoute>> stream(stub_->Ping(&context));
-    PingRoute route;
+    std::shared_ptr<ClientReaderWriter<PingRequest, PingResponse>> stream(stub_->Ping(&context));
+    PingRequest request;
+    PingResponse response;
+    request.set_id(this->id);
     // std::cout << "here client ping #begin" << std::endl;
-    size_t limit = 5, count = 0;
-    stream->Write(route);
-    while(stream->Read(&route))
+    stream->Write(request);
+    ResponseStatus responseStatus = ResponseStatus::WAIT;
+    while (stream->Read(&response) && responseStatus == ResponseStatus::WAIT)
     {
-      std::cout << "here client ping #read " << count << std::endl;
-      if (++count > limit) {
-        break;
-      }
-      stream->Write(route);
+      responseStatus = response.responsestatus();
+      std::cout << "here client ping #read " << responseStatus << std::endl;
+    }
+    if (responseStatus == ResponseStatus::WAIT)
+    {
+      throw std::runtime_error("unresolved request, stream ended and client's still waiting");
     }
 
     std::cout << "here client ping #finish" << std::endl;
@@ -43,12 +48,13 @@ class PingClient {
     std::cout << "here client ping #finish-2: " << int(status.error_code()) << std::endl;
     if (!status.ok())
     {
-      std::cout << "ERROR => " << status.error_code() << ": " << status.error_message() << std::endl;
+      throw std::runtime_error(std::to_string(status.error_code()) + ": " + status.error_message());
     }
   }
 
  private:
    std::unique_ptr<PingService::Stub> stub_;
+   const size_t id;
 };
 
 int main(int argc, char** argv) {
@@ -61,7 +67,7 @@ int main(int argc, char** argv) {
   std::string target_str = "localhost:50051";
 
   PingClient client(
-      grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
+      grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()), id);
   client.Ping();
 
   return 0;
