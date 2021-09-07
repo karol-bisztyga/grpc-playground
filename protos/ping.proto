@@ -3,8 +3,20 @@ syntax = "proto3";
 package ping;
 
 service PingService {
-  rpc Ping (stream PingRoute) returns (stream PingRoute) {}
+  rpc Ping (stream PingRequest) returns (stream PingResponse) {}
 }
 
-message PingRoute {
+message PingRequest {
+  uint32 id = 1;
+}
+
+enum ResponseStatus {
+  NEW_PRIMARY = 0;
+  PRIMARY_ONLINE = 1;
+  PRIMARY_OFFLINE = 2;
+  WAIT = 3;
+}
+
+message PingResponse {
+  ResponseStatus responseStatus = 1;
 }
