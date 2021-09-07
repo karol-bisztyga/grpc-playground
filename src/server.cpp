@@ -14,24 +14,30 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::ServerReaderWriter;
 using grpc::Status;
-using ping::PingRoute;
+using ping::PingRequest;
+using ping::PingResponse;
+using ping::ResponseStatus;
 using ping::PingService;
 
 // Logic and data behind the server's behavior.
 class PingServiceImpl final : public PingService::Service {
-  Status Ping(ServerContext *context, ServerReaderWriter<PingRoute, PingRoute> *stream) override
+public:
+  Status Ping(ServerContext *context, ServerReaderWriter<PingResponse, PingRequest> *reactor) override
   {
     std::cout << "here server ping #start" << std::endl;
-    PingRoute route;
-    size_t limit = 3, count = 0;
-    while(stream->Read(&route))
+    PingRequest request;
+    PingResponse response;
+    reactor->Read(&request);
+
+    std::cout << "here server ping #read, client id: " << request.id() << std::endl;
+    for (size_t i = 0; i < 3; ++i)
     {
-      std::cout << "here server ping #read " << count << std::endl;
-      if (++count > limit) {
-        break;
-      }
-      stream->Write(route);
+      response.set_responsestatus(ResponseStatus::WAIT);
+      reactor->Write(response);
     }
+
+    response.set_responsestatus(ResponseStatus::NEW_PRIMARY);
+    reactor->Write(response);
     std::cout << "here server ping #end" << std::endl;
     return Status::OK;
   }
