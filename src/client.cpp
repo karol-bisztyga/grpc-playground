@@ -11,54 +11,71 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::ClientReaderWriter;
 using grpc::Status;
+
 using ping::PingRequest;
 using ping::PingResponse;
 using ping::PingService;
-using ping::ResponseStatus;
+using ping::RequestType;
+using ping::ResponseType;
 
-class PingClient {
- public:
-   PingClient(std::shared_ptr<Channel> channel, size_t id)
-       : stub_(PingService::NewStub(channel)), id(id) {}
+class PingClient
+{
+public:
+  PingClient(std::shared_ptr<Channel> channel, size_t id)
+      : stub_(PingService::NewStub(channel)), id(id) {}
 
-   // Assembles the client's payload, sends it and presents the response back
-   // from the server.
+  // Assembles the client's payload, sends it and presents the response back
+  // from the server.
   void Ping()
   {
-    ClientContext context;
-    std::shared_ptr<ClientReaderWriter<PingRequest, PingResponse>> stream(stub_->Ping(&context));
+    this->stream = stub_->Ping(&context);
     PingRequest request;
     PingResponse response;
+    request.set_requesttype(RequestType::INITIAL);
     request.set_id(this->id);
-    // std::cout << "here client ping #begin" << std::endl;
     stream->Write(request);
-    ResponseStatus responseStatus = ResponseStatus::WAIT;
-    while (stream->Read(&response) && responseStatus == ResponseStatus::WAIT)
+    ResponseType responseType = ResponseType::WAIT;
+    while (stream->Read(&response))
     {
-      responseStatus = response.responsestatus();
-      std::cout << "here client ping #read " << responseStatus << std::endl;
-    }
-    if (responseStatus == ResponseStatus::WAIT)
-    {
-      throw std::runtime_error("unresolved request, stream ended and client's still waiting");
+      responseType = response.responsetype();
+      std::cout << "here client ping #read " << ping::ResponseType_Name(responseType) << std::endl;
+      if (responseType != ResponseType::WAIT)
+      {
+        break;
+      }
     }
 
-    std::cout << "here client ping #finish" << std::endl;
-    Status status = stream->Finish();
-    std::cout << "here client ping #finish-2: " << int(status.error_code()) << std::endl;
+    do
+    {
+      responseType = response.responsetype();
+      std::cout << "new data from server: " << ping::ResponseType_Name(responseType) << std::endl;
+      if (responseType == ResponseType::PING)
+      {
+        std::cout << "sending PONG" << std::endl;
+        request.set_requesttype(RequestType::PONG);
+        stream->Write(request);
+      }
+    } while (stream->Read(&response));
+
+    Status status = this->stream->Finish();
     if (!status.ok())
     {
-      throw std::runtime_error(std::to_string(status.error_code()) + ": " + status.error_message());
+      std::cout << "ERROR: " << std::to_string(status.error_code()) << ": " << status.error_message() << std::endl;
     }
+    std::cout << "client with id " << this->id << " disconnected successfully" << std::endl;
   }
 
- private:
-   std::unique_ptr<PingService::Stub> stub_;
-   const size_t id;
+private:
+  std::unique_ptr<PingService::Stub> stub_;
+  std::unique_ptr<ClientReaderWriter<PingRequest, PingResponse> > stream;
+  ClientContext context;
+  const size_t id;
 };
 
-int main(int argc, char** argv) {
-  if (argc != 2) {
+int main(int argc, char **argv)
+{
+  if (argc != 2)
+  {
     std::cout << "please provide an argument with a client id" << std::endl;
     return 1;
   }

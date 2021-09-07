@@ -6,17 +6,24 @@ service PingService {
   rpc Ping (stream PingRequest) returns (stream PingResponse) {}
 }
 
-message PingRequest {
-  uint32 id = 1;
+enum RequestType {
+  INITIAL = 0;
+  PONG = 2;
 }
 
-enum ResponseStatus {
+message PingRequest {
+  RequestType requestType = 1;
+  uint32 id = 2;
+}
+
+enum ResponseType {
   NEW_PRIMARY = 0;
   PRIMARY_ONLINE = 1;
   PRIMARY_OFFLINE = 2;
   WAIT = 3;
+  PING = 4;
 }
 
 message PingResponse {
-  ResponseStatus responseStatus = 1;
+  ResponseType responseType = 1;
 }

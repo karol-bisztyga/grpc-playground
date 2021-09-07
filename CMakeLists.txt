@@ -8,7 +8,7 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 
 #include(./common.cmake)
 
@@ -44,6 +44,7 @@ get_filename_component(hw_proto_path "${hw_proto}" PATH)
 file(GLOB GENERATED_CODE "./cmake/build/_generated/*.cc")
 
 include_directories(
+  ./src
   ./cmake/build/_generated
 )
 
