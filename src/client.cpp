@@ -38,27 +38,28 @@ public:
     InitialResponseType responseType;
     request.set_id(this->id);
     Status status = stub_->Initialize(&context, request, &response);
-
     if (!status.ok())
     {
       throw std::runtime_error(status.error_message());
-      std::cout << "ERROR: " << std::to_string(status.error_code()) << ": " << status.error_message() << std::endl; // todo remove
     }
 
     responseType = response.initialresponsetype();
     return responseType;
   }
 
-  void SendPing()
+  SendPingResponseType SendPing()
   {
     ClientContext context;
     SendPingRequest request;
     SendPingResponse response;
     request.set_id(this->id);
     Status status = stub_->SendPing(&context, request, &response);
+    if (!status.ok())
+    {
+      throw std::runtime_error(status.error_message());
+    }
     SendPingResponseType responseType = response.sendpingresponsetype();
-
-    std::cout << "send ping response: " << ping::SendPingResponseType_Name(responseType) << std::endl;
+    return responseType;
   }
 
   void HostPing()
@@ -78,46 +79,6 @@ public:
       stream->Write(request);
     }
   }
-
-  /*
-    ClientContext context;
-    std::unique_ptr<ClientReaderWriter<PingRequest, PingResponse> > stream = stub_->Ping(&context);
-    PingRequest request;
-    PingResponse response;
-    request.set_requesttype(RequestType::INITIAL);
-    request.set_id(this->id);
-    stream->Write(request);
-    ResponseType responseType = ResponseType::WAIT;
-    while (stream->Read(&response))
-    {
-      responseType = response.responsetype();
-      std::cout << "here client ping #read " << ping::ResponseType_Name(responseType) << std::endl;
-      if (responseType != ResponseType::WAIT)
-      {
-        break;
-      }
-    }
-
-    do
-    {
-      responseType = response.responsetype();
-      std::cout << "new data from server: " << ping::ResponseType_Name(responseType) << std::endl;
-      if (responseType == ResponseType::PING)
-      {
-        std::cout << "sending PONG" << std::endl;
-        request.set_requesttype(RequestType::PONG);
-        stream->Write(request);
-      }
-    } while (stream->Read(&response));
-
-    Status status = this->stream->Finish();
-    if (!status.ok())
-    {
-      std::cout << "ERROR: " << std::to_string(status.error_code()) << ": " << status.error_message() << std::endl;
-    }
-    std::cout << "client with id " << this->id << " disconnected successfully" << std::endl;
-  }
-    */
 
 private:
   std::unique_ptr<PingService::Stub> stub_;
@@ -146,7 +107,21 @@ int main(int argc, char **argv)
   }
   else
   {
-    client.SendPing();
+    SendPingResponseType responseType = client.SendPing();
+    if (responseType == SendPingResponseType::PRIMARY_ONLINE)
+    {
+      std:: cout << "primary device is online" << std::endl;
+      // TODO some actions here
+    }
+    else
+    {
+      std::cout << "primary device is offline" << std::endl;
+      // TODO: the question here is: should we terminate the client or leave it
+      // so it becomes a primary device once the original one perishes?
+      // to do that we'd probably need an additional queue of primary candidates
+      // and a non busy loop here(also some additional fields in ResponseType)
+      // for now it terminates
+    }
   }
 
   return 0;
