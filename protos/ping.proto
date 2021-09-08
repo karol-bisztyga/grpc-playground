@@ -3,45 +3,47 @@ syntax = "proto3";
 package ping;
 
 service PingService {
-  rpc Initialize(InitialRequest) returns (InitialResponse) {}
-  rpc HostPing (stream HostPingRequest) returns (stream HostPingResponse) {}
-  rpc SendPing (SendPingRequest) returns (SendPingResponse) {}
+  rpc CheckIfPrimaryDeviceOnline(CheckRequest) returns (CheckResponse) {}
+  rpc BecomeNewPrimaryDevice(NewPrimaryRequest) returns (NewPrimaryResponse) {}
+  rpc SendPong (PongRequest) returns (PongResponse) {}
 }
 
-// for Initialize
+// for CheckIfPrimaryDeviceOnline
 
-enum InitialResponseType {
-  NEW_PRIMARY = 0;
-  PRIMARY_PRESENT = 1;
+enum CheckResponseType {
+  PRIMARY_DOESNT_EXIST = 0;
+  PRIMARY_ONLINE = 1;
+  PRIMARY_OFFLINE = 2;
+  CURRENT_IS_PRIMARY = 3;
 }
 
-message InitialRequest {
+// TODO: all the requests are the same, maybe there can be a mutual type for all of them
+// leaving this as is for now as there may be some differences
+message CheckRequest {
   uint32 id = 1;
+  uint64 deviceToken = 2;
 }
 
-message InitialResponse {
-  InitialResponseType initialResponseType = 1;
+message CheckResponse {
+  CheckResponseType checkResponseType = 1;
 }
 
-// for HostPing
+// BecomeNewPrimaryDevice
 
-message HostPingRequest {
+message NewPrimaryRequest {
   uint32 id = 1;
+  uint64 deviceToken = 2;
 }
 
-message HostPingResponse {}
+message NewPrimaryResponse {
+  bool success = 1;
+}
 
-// for SendPing
+// for SendPong
 
-message SendPingRequest {
+message PongRequest {
   uint32 id = 1;
+  uint64 deviceToken = 2;
 }
 
-enum SendPingResponseType {
-  PRIMARY_ONLINE = 0;
-  PRIMARY_OFFLINE = 1;
-}
-
-message SendPingResponse {
-  SendPingResponseType sendPingResponseType = 1;
-}
+message PongResponse {}
