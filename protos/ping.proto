@@ -3,27 +3,45 @@ syntax = "proto3";
 package ping;
 
 service PingService {
-  rpc Ping (stream PingRequest) returns (stream PingResponse) {}
+  rpc Initialize(InitialRequest) returns (InitialResponse) {}
+  rpc HostPing (stream HostPingRequest) returns (stream HostPingResponse) {}
+  rpc SendPing (SendPingRequest) returns (SendPingResponse) {}
 }
 
-enum RequestType {
-  INITIAL = 0;
-  PONG = 2;
-}
+// for Initialize
 
-message PingRequest {
-  RequestType requestType = 1;
-  uint32 id = 2;
-}
-
-enum ResponseType {
+enum InitialResponseType {
   NEW_PRIMARY = 0;
-  PRIMARY_ONLINE = 1;
-  PRIMARY_OFFLINE = 2;
-  WAIT = 3;
-  PING = 4;
+  PRIMARY_PRESENT = 1;
 }
 
-message PingResponse {
-  ResponseType responseType = 1;
+message InitialRequest {
+  uint32 id = 1;
+}
+
+message InitialResponse {
+  InitialResponseType initialResponseType = 1;
+}
+
+// for HostPing
+
+message HostPingRequest {
+  uint32 id = 1;
+}
+
+message HostPingResponse {}
+
+// for SendPing
+
+message SendPingRequest {
+  uint32 id = 1;
+}
+
+enum SendPingResponseType {
+  PRIMARY_ONLINE = 0;
+  PRIMARY_OFFLINE = 1;
+}
+
+message SendPingResponse {
+  SendPingResponseType sendPingResponseType = 1;
 }
