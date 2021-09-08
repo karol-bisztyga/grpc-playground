@@ -15,6 +15,8 @@
 
 #include "threadSafeQueue.h"
 
+using namespace std::chrono_literals;
+
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -23,15 +25,14 @@ using grpc::ServerReaderWriter;
 using grpc::ServerWriter;
 using grpc::Status;
 
-using ping::HostPingRequest;
-using ping::HostPingResponse;
-using ping::InitialRequest;
-using ping::InitialResponse;
-using ping::InitialResponseType;
+using ping::CheckRequest;
+using ping::CheckResponse;
+using ping::CheckResponseType;
+using ping::PongRequest;
+using ping::PongResponse;
 using ping::PingService;
-using ping::SendPingRequest;
-using ping::SendPingResponse;
-using ping::SendPingResponseType;
+using ping::NewPrimaryRequest;
+using ping::NewPrimaryResponse;
 
 using std::size_t;
 
@@ -42,8 +43,9 @@ struct ClientData
   std::mutex mutex;
   std::condition_variable cv;
   bool isActive = false;
+  long long deviceToken;
 
-  ClientData(const size_t id) : id(id) {}
+  ClientData(const size_t id, long long deviceToken) : id(id), deviceToken(deviceToken) {}
 };
 
 class ThreadSafeMap
@@ -75,70 +77,87 @@ class PingServiceImpl final : public PingService::Service
 public:
   ThreadSafeMap primaries;
 
-  Status Initialize(ServerContext *context, const InitialRequest *request, InitialResponse *response) override
+  Status CheckIfPrimaryDeviceOnline(ServerContext *context, const CheckRequest *request, CheckResponse *response) override
   {
-    std::cout << "initialize" << std::endl;
     const size_t id = (size_t)request->id();
+    const long long deviceToken = (long long)request->devicetoken();
+    std::cout << "check if primary device is online/" << id << "/" << deviceToken << std::endl;
 
     if (primaries.get(id) == nullptr)
     {
       // this device becomes a new primary device
-      response->set_initialresponsetype(InitialResponseType::NEW_PRIMARY);
-
-      std::shared_ptr<ClientData> clientData = std::make_shared<ClientData>((size_t)request->id());
-      primaries.set(id, clientData);
+      response->set_checkresponsetype(CheckResponseType::PRIMARY_DOESNT_EXIST);
+    }
+    else if (deviceToken == primaries.get(id)->deviceToken)
+    {
+      response->set_checkresponsetype(CheckResponseType::CURRENT_IS_PRIMARY);
     }
     else
     {
-      response->set_initialresponsetype(InitialResponseType::PRIMARY_PRESENT);
-    }
+      // TODO: the background notif should be sent what cannot be really simulated here I believe
+      primaries.get(id)->pingRequests.enqueue(true);
 
-    return Status::OK;
-  }
-
-  Status SendPing(ServerContext *context, const SendPingRequest *request, SendPingResponse *response) override
-  {
-    using namespace std::chrono_literals;
-    std::cout << "send ping" << std::endl;
-    const size_t id = (size_t)request->id();
-    // add a ping request for the client that owns a primary device
-    primaries.get(id)->pingRequests.enqueue(true);
-
-    // check for a pong with a timeout...
-    std::unique_lock<std::mutex> lock(primaries.get(id)->mutex);
-    if (primaries.get(id)->cv.wait_for(lock, 500ms, [=]
-                                                   { return primaries.get(id)->isActive; }))
-    {
-      std::cout << "done waiting " << primaries.get(id)->isActive << std::endl;
-      response->set_sendpingresponsetype(SendPingResponseType::PRIMARY_ONLINE);
-    }
-    else
-    {
-      std::cout << "timed out" << std::endl;
-      response->set_sendpingresponsetype(SendPingResponseType::PRIMARY_OFFLINE);
-    }
-    return Status::OK;
-  }
-
-  Status HostPing(ServerContext *context, ServerReaderWriter<HostPingResponse, HostPingRequest> *stream) override
-  {
-    std::cout << "host ping" << std::endl;
-
-    HostPingRequest request;
-    HostPingResponse response;
-    stream->Read(&request);
-    const size_t id = (size_t)request.id();
-    // wait for ping requests from other threads here
-    while (primaries.get(id)->pingRequests.dequeue())
-    {
-      // send a ping to a client
-      stream->Write(response);
-
-      stream->Read(&request);
-      primaries.get(id)->isActive = true;
+      // check for a pong with a timeout...
+      std::unique_lock<std::mutex> lock(primaries.get(id)->mutex);
+      // TODO: timeout currently set for 3s, to be changed
+      if (primaries.get(id)->cv.wait_for(lock, 3000ms, [=]
+                                         { return primaries.get(id)->isActive; }))
+      {
+        std::cout << "got a response " << primaries.get(id)->isActive << std::endl;
+        response->set_checkresponsetype(CheckResponseType::PRIMARY_ONLINE);
+      }
+      else
+      {
+        std::cout << "timed out" << std::endl;
+        response->set_checkresponsetype(CheckResponseType::PRIMARY_OFFLINE);
+      }
+      // reset isActive to false so next time a pong is also required
+      primaries.get(id)->isActive = false;
       primaries.get(id)->cv.notify_all();
     }
 
+    return Status::OK;
+  }
+
+  Status BecomeNewPrimaryDevice(ServerContext* context, const NewPrimaryRequest* request, NewPrimaryResponse* response) override
+  {
+    const size_t id = (size_t)request->id();
+    const long long deviceToken = (long long)request->devicetoken();
+    std::cout << "become a new primary device/" << id << "/" << deviceToken << std::endl;
+
+    if (primaries.get(id) == nullptr)
+    {
+      std::shared_ptr<ClientData> clientData = std::make_shared<ClientData>(
+        (size_t)request->id(),
+        deviceToken
+      );
+      primaries.set(id, clientData);
+      response->set_success(true);
+    }
+    else
+    {
+      response->set_success(false);
+    }
+    return Status::OK;
+  }
+
+  Status SendPong(ServerContext* context, const PongRequest* request, PongResponse* response) override
+  {
+    const size_t id = (size_t)request->id();
+    const long long deviceToken = (long long)request->devicetoken();
+    std::cout << "send pong/" << id << "/" << deviceToken << std::endl;
+
+    if (primaries.get(id) == nullptr || primaries.get(id)->deviceToken != deviceToken)
+    {
+      std::cout << "received pong from non-primary device, noop" << std::endl;
+      return Status::OK;
+    }
+
+    primaries.get(id)->pingRequests.dequeue();
+
+    primaries.get(id)->isActive = true;
+    primaries.get(id)->cv.notify_all();
+    
     return Status::OK;
   }
 };
