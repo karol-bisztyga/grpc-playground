@@ -18,7 +18,6 @@ find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
 set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
-set(_REFLECTION gRPC::grpc++_reflection)
 if(CMAKE_CROSSCOMPILING)
   find_program(_PROTOBUF_PROTOC protoc)
 else()
@@ -58,7 +57,6 @@ add_executable(
 target_link_libraries(
   example_client
   
-  ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF}
 )
@@ -79,7 +77,6 @@ add_executable(
 target_link_libraries(
   example_server
   
-  ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF}
 )
