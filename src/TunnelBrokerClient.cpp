@@ -1,7 +1,8 @@
 #include "TunnelBrokerClient.h"
 
 TunnelBrokerClient::TunnelBrokerClient(std::shared_ptr<grpc::Channel> channel, std::string id, std::string deviceToken)
-    : stub_(tunnelbroker::TunnelBrokerService::NewStub(channel)),
+    : tbStub_(tunnelbroker::TunnelBrokerService::NewStub(channel)),
+      backupStub_(tunnelbroker::BackupService::NewStub(channel)),
       id(id),
       deviceToken(deviceToken) {}
 
@@ -14,7 +15,7 @@ tunnelbroker::CheckResponseType TunnelBrokerClient::checkIfPrimaryDeviceOnline()
   request.set_id(this->id);
   request.set_devicetoken(this->deviceToken);
 
-  grpc::Status status = stub_->CheckIfPrimaryDeviceOnline(&context, request, &response);
+  grpc::Status status = tbStub_->CheckIfPrimaryDeviceOnline(&context, request, &response);
   if (!status.ok())
   {
     throw std::runtime_error(status.error_message());
@@ -31,7 +32,7 @@ bool TunnelBrokerClient::becomeNewPrimaryDevice()
   request.set_id(this->id);
   request.set_devicetoken(this->deviceToken);
 
-  grpc::Status status = stub_->BecomeNewPrimaryDevice(&context, request, &response);
+  grpc::Status status = tbStub_->BecomeNewPrimaryDevice(&context, request, &response);
   if (!status.ok())
   {
     throw std::runtime_error(status.error_message());
@@ -48,9 +49,33 @@ void TunnelBrokerClient::sendPong()
   request.set_id(this->id);
   request.set_devicetoken(this->deviceToken);
 
-  grpc::Status status = stub_->SendPong(&context, request, &response);
+  grpc::Status status = tbStub_->SendPong(&context, request, &response);
   if (!status.ok())
   {
     throw std::runtime_error(status.error_message());
   }
+}
+
+void TunnelBrokerClient::sendLog(const std::string data)
+{
+  grpc::ClientContext context;
+  tunnelbroker::SendLogRequest request;
+  tunnelbroker::SendLogResponse response;
+
+  request.set_id(this->id);
+  request.set_data(data);
+
+  grpc::Status status = backupStub_->SendLog(&context, request, &response);
+  if (!status.ok())
+  {
+    throw std::runtime_error(status.error_message());
+  }
+}
+
+void TunnelBrokerClient::resetLog() {
+  ;
+}
+
+void TunnelBrokerClient::restoreBackup() {
+  ;
 }
