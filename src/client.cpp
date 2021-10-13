@@ -95,6 +95,7 @@ int main(int argc, char **argv)
       case 'l':
       {
         std::cout << "sending log... ";
+        client.sendLog("hello!");
         break;
       }
       case 'r':
