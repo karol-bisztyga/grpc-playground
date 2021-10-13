@@ -11,31 +11,24 @@
 
 using namespace std::chrono;
 
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::ClientReader;
-using grpc::ClientReaderWriter;
-using grpc::ClientWriter;
-using grpc::Status;
-
 class TunnelBrokerClient
 {
 public:
-  TunnelBrokerClient(std::shared_ptr<Channel> channel, std::string id, std::string deviceToken)
+  TunnelBrokerClient(std::shared_ptr<grpc::Channel> channel, std::string id, std::string deviceToken)
       : stub_(tunnelbroker::TunnelBrokerService::NewStub(channel)),
         id(id),
         deviceToken(deviceToken) {}
 
   tunnelbroker::CheckResponseType checkIfPrimaryDeviceOnline()
   {
-    ClientContext context;
+    grpc::ClientContext context;
     tunnelbroker::CheckRequest request;
     tunnelbroker::CheckResponse response;
 
     request.set_id(this->id);
     request.set_devicetoken(this->deviceToken);
 
-    Status status = stub_->CheckIfPrimaryDeviceOnline(&context, request, &response);
+    grpc::Status status = stub_->CheckIfPrimaryDeviceOnline(&context, request, &response);
     if (!status.ok())
     {
       throw std::runtime_error(status.error_message());
@@ -45,14 +38,14 @@ public:
 
   bool becomeNewPrimaryDevice()
   {
-    ClientContext context;
+    grpc::ClientContext context;
     tunnelbroker::NewPrimaryRequest request;
     tunnelbroker::NewPrimaryResponse response;
 
     request.set_id(this->id);
     request.set_devicetoken(this->deviceToken);
 
-    Status status = stub_->BecomeNewPrimaryDevice(&context, request, &response);
+    grpc::Status status = stub_->BecomeNewPrimaryDevice(&context, request, &response);
     if (!status.ok())
     {
       throw std::runtime_error(status.error_message());
@@ -62,14 +55,14 @@ public:
 
   void sendPong()
   {
-    ClientContext context;
+    grpc::ClientContext context;
     tunnelbroker::PongRequest request;
     tunnelbroker::PongResponse response;
 
     request.set_id(this->id);
     request.set_devicetoken(this->deviceToken);
 
-    Status status = stub_->SendPong(&context, request, &response);
+    grpc::Status status = stub_->SendPong(&context, request, &response);
     if (!status.ok())
     {
       throw std::runtime_error(status.error_message());
