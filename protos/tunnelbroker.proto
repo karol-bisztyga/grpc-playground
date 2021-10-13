@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package ping;
+package tunnelbroker;
 
-service PingService {
+service TunnelBrokerService {
   rpc CheckIfPrimaryDeviceOnline(CheckRequest) returns (CheckResponse) {}
   rpc BecomeNewPrimaryDevice(NewPrimaryRequest) returns (NewPrimaryResponse) {}
   rpc SendPong (PongRequest) returns (PongResponse) {}
@@ -20,8 +20,8 @@ enum CheckResponseType {
 // TODO: all the requests are the same, maybe there can be a mutual type for all of them
 // leaving this as is for now as there may be some differences
 message CheckRequest {
-  uint32 id = 1;
-  uint64 deviceToken = 2;
+  string id = 1;
+  string deviceToken = 2;
 }
 
 message CheckResponse {
@@ -31,8 +31,8 @@ message CheckResponse {
 // BecomeNewPrimaryDevice
 
 message NewPrimaryRequest {
-  uint32 id = 1;
-  uint64 deviceToken = 2;
+  string id = 1;
+  string deviceToken = 2;
 }
 
 message NewPrimaryResponse {
@@ -42,8 +42,8 @@ message NewPrimaryResponse {
 // for SendPong
 
 message PongRequest {
-  uint32 id = 1;
-  uint64 deviceToken = 2;
+  string id = 1;
+  string deviceToken = 2;
 }
 
 message PongResponse {}

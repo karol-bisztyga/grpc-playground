@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package tunnelbroker;
+
+service BackupService {
+  rpc SendLog(SendLogRequest) returns (SendLogResponse) {}
+  rpc ResetLogs(ResetLogsRequest) returns (ResetLogsResponse) {}
+  rpc Restore(RestoreRequest) returns (stream RestoreResponse) {}
+}
+
+// SendLog
+
+message SendLogRequest {
+  string id = 1;
+  string data = 2;
+}
+
+message SendLogResponse {
+  bool success = 1;
+}
+
+// ResetLogs
+
+message ResetLogsRequest {
+  string id = 1;
+}
+
+message ResetLogsResponse {
+  bool success = 1;
+}
+
+// Restore
+
+message RestoreRequest {
+  string id = 1;
+}
+
+message RestoreResponse {
+  string data = 1;
+}

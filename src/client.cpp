@@ -6,8 +6,8 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include "../_generated/ping.pb.h"
-#include "../_generated/ping.grpc.pb.h"
+#include "../_generated/tunnelbroker.pb.h"
+#include "../_generated/tunnelbroker.grpc.pb.h"
 
 using namespace std::chrono;
 
@@ -18,28 +18,19 @@ using grpc::ClientReaderWriter;
 using grpc::ClientWriter;
 using grpc::Status;
 
-using ping::CheckRequest;
-using ping::CheckResponse;
-using ping::CheckResponseType;
-using ping::NewPrimaryRequest;
-using ping::NewPrimaryResponse;
-using ping::PingService;
-using ping::PongRequest;
-using ping::PongResponse;
-
-class PingClient
+class TunnelBrokerClient
 {
 public:
-  PingClient(std::shared_ptr<Channel> channel, size_t id, long long deviceToken)
-      : stub_(PingService::NewStub(channel)),
+  TunnelBrokerClient(std::shared_ptr<Channel> channel, std::string id, std::string deviceToken)
+      : stub_(tunnelbroker::TunnelBrokerService::NewStub(channel)),
         id(id),
         deviceToken(deviceToken) {}
 
-  CheckResponseType checkIfPrimaryDeviceOnline()
+  tunnelbroker::CheckResponseType checkIfPrimaryDeviceOnline()
   {
     ClientContext context;
-    CheckRequest request;
-    CheckResponse response;
+    tunnelbroker::CheckRequest request;
+    tunnelbroker::CheckResponse response;
 
     request.set_id(this->id);
     request.set_devicetoken(this->deviceToken);
@@ -55,8 +46,8 @@ public:
   bool becomeNewPrimaryDevice()
   {
     ClientContext context;
-    NewPrimaryRequest request;
-    NewPrimaryResponse response;
+    tunnelbroker::NewPrimaryRequest request;
+    tunnelbroker::NewPrimaryResponse response;
 
     request.set_id(this->id);
     request.set_devicetoken(this->deviceToken);
@@ -72,8 +63,8 @@ public:
   void sendPong()
   {
     ClientContext context;
-    PongRequest request;
-    PongResponse response;
+    tunnelbroker::PongRequest request;
+    tunnelbroker::PongResponse response;
 
     request.set_id(this->id);
     request.set_devicetoken(this->deviceToken);
@@ -86,9 +77,9 @@ public:
   }
 
 private:
-  std::unique_ptr<PingService::Stub> stub_;
-  const size_t id;
-  const long long deviceToken;
+  std::unique_ptr<tunnelbroker::TunnelBrokerService::Stub> stub_;
+  const std::string id;
+  const std::string deviceToken;
 };
 
 // this is a simulation of a device token
@@ -109,14 +100,14 @@ int main(int argc, char **argv)
     std::cout << "please provide an argument with a client id" << std::endl;
     return 1;
   }
-  size_t id = (size_t)atoi(argv[1]);
-  long long deviceToken = generateUID();
+  std::string id = std::string(argv[1]);
+  std::string deviceToken = std::to_string(generateUID());
   std::cout << "client start" << std::endl;
   std::cout << "id           : " << id << std::endl;
   std::cout << "device token : " << deviceToken << std::endl;
   std::string target_str = "localhost:50051";
 
-  PingClient client(
+  TunnelBrokerClient client(
       grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()),
       id,
       deviceToken);
@@ -124,11 +115,14 @@ int main(int argc, char **argv)
   char option = '?';
   while (option != 'e')
   {
-    std::string options = "cbse";
+    std::string options = "cbplrbe";
     std::cout << "what you want to do?" << std::endl;
-    std::cout << "[c] check if primary device is online" << std::endl;
-    std::cout << "[b] become a new primary device" << std::endl;
-    std::cout << "[s] send pong" << std::endl;
+    std::cout << "[c] *ping* check if primary device is online" << std::endl;
+    std::cout << "[n] *ping* become a new primary device" << std::endl;
+    std::cout << "[p] *ping* send pong" << std::endl;
+    std::cout << "[l] *backup* send log" << std::endl;
+    std::cout << "[r] *backup* reset log" << std::endl;
+    std::cout << "[b] *backup* restore backup" << std::endl;
     std::cout << "[e] exit" << std::endl;
     std::cin >> option;
     if (options.find(option) == std::string::npos)
@@ -141,11 +135,11 @@ int main(int argc, char **argv)
       {
       case 'c':
       {
-        CheckResponseType checkResponse = client.checkIfPrimaryDeviceOnline();
-        std::cout << "check primary device response: " << ping::CheckResponseType_Name(checkResponse) << std::endl;
+        tunnelbroker::CheckResponseType checkResponse = client.checkIfPrimaryDeviceOnline();
+        std::cout << "check primary device response: " << tunnelbroker::CheckResponseType_Name(checkResponse) << std::endl;
         break;
       }
-      case 'b':
+      case 'n':
       {
         bool success = client.becomeNewPrimaryDevice();
         std::cout << "trying to become a new primary device... ";
@@ -160,11 +154,26 @@ int main(int argc, char **argv)
         std::cout << std::endl;
         break;
       }
-      case 's':
+      case 'p':
       {
         std::cout << "sending pong... ";
         client.sendPong();
         std::cout << "sent!" << std::endl;
+        break;
+      }
+      case 'l':
+      {
+        std::cout << "sending log... ";
+        break;
+      }
+      case 'r':
+      {
+        std::cout << "reseting log... ";
+        break;
+      }
+      case 'b':
+      {
+        std::cout << "restoring backup... ";
         break;
       }
       }
