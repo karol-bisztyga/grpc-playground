@@ -1,79 +1,17 @@
-#include <iostream>
-#include <memory>
-#include <string>
-
-#include <chrono>
+#include "TunnelBrokerClient.h"
 
 #include <grpcpp/grpcpp.h>
 
 #include "../_generated/tunnelbroker.pb.h"
 #include "../_generated/tunnelbroker.grpc.pb.h"
 
+#include <iostream>
+#include <memory>
+#include <string>
+
+#include <chrono>
+
 using namespace std::chrono;
-
-class TunnelBrokerClient
-{
-public:
-  TunnelBrokerClient(std::shared_ptr<grpc::Channel> channel, std::string id, std::string deviceToken)
-      : stub_(tunnelbroker::TunnelBrokerService::NewStub(channel)),
-        id(id),
-        deviceToken(deviceToken) {}
-
-  tunnelbroker::CheckResponseType checkIfPrimaryDeviceOnline()
-  {
-    grpc::ClientContext context;
-    tunnelbroker::CheckRequest request;
-    tunnelbroker::CheckResponse response;
-
-    request.set_id(this->id);
-    request.set_devicetoken(this->deviceToken);
-
-    grpc::Status status = stub_->CheckIfPrimaryDeviceOnline(&context, request, &response);
-    if (!status.ok())
-    {
-      throw std::runtime_error(status.error_message());
-    }
-    return response.checkresponsetype();
-  }
-
-  bool becomeNewPrimaryDevice()
-  {
-    grpc::ClientContext context;
-    tunnelbroker::NewPrimaryRequest request;
-    tunnelbroker::NewPrimaryResponse response;
-
-    request.set_id(this->id);
-    request.set_devicetoken(this->deviceToken);
-
-    grpc::Status status = stub_->BecomeNewPrimaryDevice(&context, request, &response);
-    if (!status.ok())
-    {
-      throw std::runtime_error(status.error_message());
-    }
-    return response.success();
-  }
-
-  void sendPong()
-  {
-    grpc::ClientContext context;
-    tunnelbroker::PongRequest request;
-    tunnelbroker::PongResponse response;
-
-    request.set_id(this->id);
-    request.set_devicetoken(this->deviceToken);
-
-    grpc::Status status = stub_->SendPong(&context, request, &response);
-    if (!status.ok())
-    {
-      throw std::runtime_error(status.error_message());
-    }
-  }
-
-private:
-  std::unique_ptr<tunnelbroker::TunnelBrokerService::Stub> stub_;
-  const std::string id;
-  const std::string deviceToken;
-};
 
 // this is a simulation of a device token
 // I figured we can use a timestamp in milliseconds as a unique id for a process
