@@ -42,9 +42,23 @@ get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 file(GLOB GENERATED_CODE "./cmake/build/_generated/*.cc")
 
+#########################
+#set(WITH_GTEST OFF CACHE BOOL "Use googletest" FORCE)
+#set(WITH_GFLAGS OFF CACHE BOOL "Use gflags" FORCE)
+add_subdirectory(./src/lib/glog)
+
 include_directories(
   ./src
   ./cmake/build/_generated
+  ./src/lib/folly
+)
+
+add_definitions(
+  -DFOLLY_NO_CONFIG=1
+  -DFOLLY_HAVE_CLOCK_GETTIME=1
+  -DFOLLY_HAVE_MEMRCHR=1
+  -DFOLLY_USE_LIBCPP=1
+  -DFOLLY_MOBILE=0
 )
 
 # CLIENT
@@ -68,21 +82,22 @@ install(
 )
 
 #SERVER
-add_executable(
-  server
+#add_executable(
+#  server
 
-  ${GENERATED_CODE}
-  src/server.cpp
-)
+#  ${GENERATED_CODE}
+#  src/server.cpp
+#)
 
-target_link_libraries(
-  server
+#target_link_libraries(
+#  server
   
-  ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF}
-)
+#  glog::glog
+#  ${_GRPC_GRPCPP}
+#  ${_PROTOBUF_LIBPROTOBUF}
+#)
 
-install(
-  TARGETS server
-  RUNTIME DESTINATION bin/
-)
+#install(
+#  TARGETS server
+#  RUNTIME DESTINATION bin/
+#)
