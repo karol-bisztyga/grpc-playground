@@ -46,19 +46,17 @@ int main(int argc, char **argv)
   char option = '?';
   while (option != 'e')
   {
-    std::string options = "cbplrbe";
+    std::string options = "cpse";
     std::cout << "what you want to do?" << std::endl;
-    std::cout << "[c] *ping* check if primary device is online" << std::endl;
-    std::cout << "[n] *ping* become a new primary device" << std::endl;
-    std::cout << "[p] *ping* send pong" << std::endl;
-    std::cout << "[l] *backup* send log" << std::endl;
-    std::cout << "[r] *backup* reset log" << std::endl;
-    std::cout << "[b] *backup* restore backup" << std::endl;
+    std::cout << "[c] check if primary device is online" << std::endl;
+    std::cout << "[p] become a new primary device" << std::endl;
+    std::cout << "[s] send pong" << std::endl;
     std::cout << "[e] exit" << std::endl;
     std::cin >> option;
     if (options.find(option) == std::string::npos)
     {
       std::cout << "invalid command [" << option << "], skipping" << std::endl;
+      continue;
     }
     try
     {
@@ -70,7 +68,7 @@ int main(int argc, char **argv)
         std::cout << "check primary device response: " << tunnelbroker::CheckResponseType_Name(checkResponse) << std::endl;
         break;
       }
-      case 'n':
+      case 'p':
       {
         bool success = client.becomeNewPrimaryDevice();
         std::cout << "trying to become a new primary device... ";
@@ -85,26 +83,11 @@ int main(int argc, char **argv)
         std::cout << std::endl;
         break;
       }
-      case 'p':
+      case 's':
       {
         std::cout << "sending pong... ";
         client.sendPong();
         std::cout << "sent!" << std::endl;
-        break;
-      }
-      case 'l':
-      {
-        std::cout << "sending log... ";
-        break;
-      }
-      case 'r':
-      {
-        std::cout << "reseting log... ";
-        break;
-      }
-      case 'b':
-      {
-        std::cout << "restoring backup... ";
         break;
       }
       }

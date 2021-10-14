@@ -11,7 +11,7 @@ tunnelbroker::CheckResponseType TunnelBrokerClient::checkIfPrimaryDeviceOnline()
   tunnelbroker::CheckRequest request;
   tunnelbroker::CheckResponse response;
 
-  request.set_id(this->id);
+  request.set_userid(this->id);
   request.set_devicetoken(this->deviceToken);
 
   grpc::Status status = stub_->CheckIfPrimaryDeviceOnline(&context, request, &response);
@@ -28,7 +28,7 @@ bool TunnelBrokerClient::becomeNewPrimaryDevice()
   tunnelbroker::NewPrimaryRequest request;
   tunnelbroker::NewPrimaryResponse response;
 
-  request.set_id(this->id);
+  request.set_userid(this->id);
   request.set_devicetoken(this->deviceToken);
 
   grpc::Status status = stub_->BecomeNewPrimaryDevice(&context, request, &response);
@@ -45,7 +45,7 @@ void TunnelBrokerClient::sendPong()
   tunnelbroker::PongRequest request;
   tunnelbroker::PongResponse response;
 
-  request.set_id(this->id);
+  request.set_userid(this->id);
   request.set_devicetoken(this->deviceToken);
 
   grpc::Status status = stub_->SendPong(&context, request, &response);
