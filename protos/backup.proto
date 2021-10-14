@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package tunnelbroker;
+package backup;
 
 service BackupService {
   rpc SendLog(SendLogRequest) returns (SendLogResponse) {}
