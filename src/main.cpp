@@ -6,16 +6,26 @@
 #include <random>
 #include <string>
 
-std::string randomString()
+int randomNumber(const int from, const int to)
+{
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::uniform_int_distribution<int> dist(from, to);
+
+  return dist(mt);
+}
+
+std::string randomString(size_t size = 20)
 {
   std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
-  std::random_device rd;
-  std::mt19937 generator(rd());
+  std::string result;
 
-  std::shuffle(str.begin(), str.end(), generator);
+  for (size_t i = 0; i < size; ++i) {
+    result += str[randomNumber(0, str.size() - 1)];
+  }
 
-  return str.substr(0, 32);
+  return result;
 }
 
 int main(int argc, char **argv)
@@ -37,11 +47,12 @@ int main(int argc, char **argv)
   char option = '?';
   while (option != 'e')
   {
-    std::string options = "srbe";
+    std::string options = "rskce";
     std::cout << "what you want to do?" << std::endl;
+    std::cout << "[r] reset key" << std::endl;
     std::cout << "[s] send log" << std::endl;
-    std::cout << "[r] reset log" << std::endl;
-    std::cout << "[b] restore backup" << std::endl;
+    std::cout << "[k] pull backup key" << std::endl;
+    std::cout << "[c] pull compact" << std::endl;
     std::cout << "[e] exit" << std::endl;
     std::cin >> option;
     if (options.find(option) == std::string::npos)
@@ -53,23 +64,36 @@ int main(int argc, char **argv)
     {
       switch (option)
       {
-      case 's':
-      {
-        const std::string data = randomString() + " ";
-        std::cout << "sending log: [" << data << "]" << std::endl;
-        client.sendLog(data);
-        break;
-      }
       case 'r':
       {
-        std::cout << "reseting log... " << std::endl;
-        client.resetLog();
+        std::cout << "resetting key" << std::endl;
+        std::vector<std::string> newCompact;
+        const size_t nCompacts = randomNumber(3, 7);
+        for (size_t i = 0; i < nCompacts; ++i)
+        {
+          std::string chunk = randomString();
+          std::cout << "adding compact chunk [" << chunk << "]" << std::endl;
+          newCompact.push_back(chunk);
+        }
+        client.resetKey(randomString(), newCompact);
         break;
       }
-      case 'b':
+      case 's':
       {
-        std::cout << "restoring backup... " << std::endl;
-        client.restoreBackup();
+        std::cout << "sending log... " << std::endl;
+        client.sendLog(randomString());
+        break;
+      }
+      case 'k':
+      {
+        std::cout << "pulling backup key... " << std::endl;
+        client.pullBackupKey(randomString());
+        break;
+      }
+      case 'c':
+      {
+        std::cout << "pulling compact... " << std::endl;
+        client.pullCompact();
         break;
       }
       }

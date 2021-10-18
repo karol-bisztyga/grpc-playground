@@ -16,7 +16,8 @@ class Client
 public:
   Client(std::shared_ptr<grpc::Channel> channel, std::string id);
 
+  void resetKey(const std::string newKey, const std::vector<std::string> newCompact);
   void sendLog(const std::string data);
-  void resetLog();
-  void restoreBackup();
+  void pullBackupKey(const std::string pakeKey);
+  void pullCompact();
 };
