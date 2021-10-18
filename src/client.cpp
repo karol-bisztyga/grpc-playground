@@ -1,84 +1,55 @@
-#include "TunnelBrokerClient.h"
+#include "Client.h"
 
-#include <grpcpp/grpcpp.h>
+Client::Client(std::shared_ptr<grpc::Channel> channel, std::string id)
+    : stub(backup::BackupService::NewStub(channel)),
+      id(id) {}
 
-#include <iostream>
-#include <random>
-#include <string>
-
-std::string randomString()
+void Client::sendLog(const std::string data)
 {
-  std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+  grpc::ClientContext context;
+  backup::SendLogRequest request;
+  backup::SendLogResponse response;
 
-  std::random_device rd;
-  std::mt19937 generator(rd());
+  request.set_id(this->id);
+  request.set_data(data);
 
-  std::shuffle(str.begin(), str.end(), generator);
-
-  return str.substr(0, 32);
+  grpc::Status status = this->stub->SendLog(&context, request, &response);
+  if (!status.ok())
+  {
+    throw std::runtime_error(status.error_message());
+  }
+  std::cout << "log sent" << std::endl;
 }
 
-int main(int argc, char **argv)
+void Client::resetLog()
 {
-  if (argc != 2)
+  grpc::ClientContext context;
+  backup::ResetLogsRequest request;
+  backup::ResetLogsResponse response;
+
+  request.set_id(this->id);
+
+  grpc::Status status = this->stub->ResetLogs(&context, request, &response);
+  if (!status.ok())
   {
-    std::cout << "please provide an argument with a client id" << std::endl;
-    return 1;
+    throw std::runtime_error(status.error_message());
   }
-  std::string id = std::string(argv[1]);
-  std::cout << "client start" << std::endl;
-  std::cout << "id           : " << id << std::endl;
-  std::string target_str = "localhost:50051";
+  std::cout << "log reset" << std::endl;
+}
 
-  Client client(
-      grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()),
-      id);
+void Client::restoreBackup()
+{
+  grpc::ClientContext context;
+  backup::RestoreRequest request;
 
-  char option = '?';
-  while (option != 'e')
+  request.set_id(this->id);
+
+  std::unique_ptr<grpc::ClientReader<backup::RestoreResponse> > stream = this->stub->Restore(&context, request);
+  backup::RestoreResponse response;
+  std::cout << "reading the restore stream:" << std::endl;
+  while (stream->Read(&response))
   {
-    std::string options = "srbe";
-    std::cout << "what you want to do?" << std::endl;
-    std::cout << "[s] send log" << std::endl;
-    std::cout << "[r] reset log" << std::endl;
-    std::cout << "[b] restore backup" << std::endl;
-    std::cout << "[e] exit" << std::endl;
-    std::cin >> option;
-    if (options.find(option) == std::string::npos)
-    {
-      std::cout << "invalid command [" << option << "], skipping" << std::endl;
-      continue;
-    }
-    try
-    {
-      switch (option)
-      {
-      case 's':
-      {
-        const std::string data = randomString() + " ";
-        std::cout << "sending log: [" << data << "]" << std::endl;
-        client.sendLog(data);
-        break;
-      }
-      case 'r':
-      {
-        std::cout << "reseting log... " << std::endl;
-        client.resetLog();
-        break;
-      }
-      case 'b':
-      {
-        std::cout << "restoring backup... " << std::endl;
-        client.restoreBackup();
-        break;
-      }
-      }
-    }
-    catch (std::runtime_error &e)
-    {
-      std::cout << "error: " << e.what() << std::endl;
-    }
+    std::cout << "received: [" << response.data() << "]" << std::endl;
   }
-
-  return 0;
+  std::cout << "done reading the restore stream" << std::endl;
 }
