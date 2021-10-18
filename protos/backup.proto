@@ -3,15 +3,28 @@ syntax = "proto3";
 package backup;
 
 service BackupService {
+  rpc ResetKey(stream ResetKeyRequest) returns (ResetKeyResponse) {}
   rpc SendLog(SendLogRequest) returns (SendLogResponse) {}
-  rpc ResetLogs(ResetLogsRequest) returns (ResetLogsResponse) {}
-  rpc Restore(RestoreRequest) returns (stream RestoreResponse) {}
+  rpc PullBackupKey(PullBackupKeyRequest) returns (PullBackupKeyResponse) {}
+  rpc PullCompact(PullCompactRequest) returns (stream PullCompactResponse) {}
+}
+
+// ResetKey
+
+message ResetKeyRequest {
+  string userId = 1;
+  string newKey = 2;
+  string newCompactChunk = 3;
+}
+
+message ResetKeyResponse {
+  bool success = 1;
 }
 
 // SendLog
 
 message SendLogRequest {
-  string id = 1;
+  string userId = 1;
   string data = 2;
 }
 
@@ -19,22 +32,25 @@ message SendLogResponse {
   bool success = 1;
 }
 
-// ResetLogs
+// PullBackupKey
 
-message ResetLogsRequest {
-  string id = 1;
+message PullBackupKeyRequest {
+  string userId = 1;
+  string pakeKey = 2;
 }
 
-message ResetLogsResponse {
+message PullBackupKeyResponse {
   bool success = 1;
+  string backupKey = 2;
 }
 
-// Restore
+// PullCompact
 
-message RestoreRequest {
-  string id = 1;
+message PullCompactRequest {
+  string userId = 1;
 }
 
-message RestoreResponse {
-  string data = 1;
+message PullCompactResponse {
+  string compactChunk = 1;
+  string logChunk = 2;
 }
