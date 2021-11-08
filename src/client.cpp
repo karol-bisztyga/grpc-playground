@@ -13,12 +13,22 @@ void Client::resetKey(const std::string newKey, const std::vector<std::string> n
 
   backup::ResetKeyRequest request;
   request.set_userid(this->id);
-  request.set_newkey(newKey);
 
+  // first send a key and an empty chunk
+  request.set_newkey(newKey);
+    std::cout << "trying to write a new key [" << newKey << "]" << std::endl;
+  if (!writer->Write(request))
+  {
+    std::cout << "stream interrupted" << std::endl;
+    return;
+  }
+
+  // then send an empty key and filled chunks
+  request.set_newkey("");
   for (std::string chunk : newCompact)
   {
-    std::cout << "trying to write [" << chunk << "]" << std::endl;
-    request.set_newcompactchunk(chunk);
+    std::cout << "trying to write chunk [" << chunk << "]" << std::endl;
+    request.set_compactionchunk(chunk);
     if (!writer->Write(request))
     {
       std::cout << "stream interrupted" << std::endl;
@@ -68,7 +78,7 @@ void Client::pullBackupKey(const std::string pakeKey)
     throw std::runtime_error(status.error_message());
   }
 
-  std::string backupKey = response.backupkey();
+  std::string backupKey = response.encryptedbackupkey();
 
   std::cout << "pull backup key, received [" << backupKey << "]" << std::endl;
 }
@@ -76,20 +86,20 @@ void Client::pullBackupKey(const std::string pakeKey)
 void Client::pullCompact()
 {
   grpc::ClientContext context;
-  backup::PullCompactRequest request;
-  backup::PullCompactResponse response;
+  backup::PullCompactionRequest request;
+  backup::PullCompactionResponse response;
 
   request.set_userid(this->id);
 
-  std::unique_ptr<grpc::ClientReader<backup::PullCompactResponse>> stream = this->stub->PullCompact(&context, request);
+  std::unique_ptr<grpc::ClientReader<backup::PullCompactionResponse>> stream = this->stub->PullCompaction(&context, request);
   std::cout << "reading compact stream:" << std::endl;
   while (stream->Read(&response))
   {
-    std::string compactChunk = response.compactchunk();
+    std::string compactionChunk = response.compactionchunk();
     std::string logChunk = response.logchunk();
-    if (compactChunk.size())
+    if (compactionChunk.size())
     {
-      std::cout << "received: [" << compactChunk << "]" << std::endl;
+      std::cout << "received: [" << compactionChunk << "]" << std::endl;
     }
     if (logChunk.size())
     {
