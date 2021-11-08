@@ -6,15 +6,17 @@ service BackupService {
   rpc ResetKey(stream ResetKeyRequest) returns (ResetKeyResponse) {}
   rpc SendLog(SendLogRequest) returns (SendLogResponse) {}
   rpc PullBackupKey(PullBackupKeyRequest) returns (PullBackupKeyResponse) {}
-  rpc PullCompact(PullCompactRequest) returns (stream PullCompactResponse) {}
+  rpc PullCompaction(PullCompactionRequest) returns (stream PullCompactionResponse) {}
 }
 
 // ResetKey
 
 message ResetKeyRequest {
   string userId = 1;
-  string newKey = 2;
-  string newCompactChunk = 3;
+  oneof data {
+    bytes newKey = 2;
+    bytes compactionChunk = 3;
+  }
 }
 
 message ResetKeyResponse {
@@ -25,7 +27,7 @@ message ResetKeyResponse {
 
 message SendLogRequest {
   string userId = 1;
-  string data = 2;
+  bytes data = 2;
 }
 
 message SendLogResponse {
@@ -36,21 +38,22 @@ message SendLogResponse {
 
 message PullBackupKeyRequest {
   string userId = 1;
-  string pakeKey = 2;
+  bytes pakeKey = 2;
 }
 
 message PullBackupKeyResponse {
   bool success = 1;
-  string backupKey = 2;
+  bytes encryptedBackupKey = 2;
 }
 
-// PullCompact
+// PullCompaction
 
-message PullCompactRequest {
+message PullCompactionRequest {
   string userId = 1;
+  bytes message = 2;
 }
 
-message PullCompactResponse {
-  string compactChunk = 1;
-  string logChunk = 2;
+message PullCompactionResponse {
+  bytes compactionChunk = 1;
+  bytes logChunk = 2;
 }
