@@ -36,9 +36,10 @@ int main(int argc, char **argv)
     return 1;
   }
   std::string id = std::string(argv[1]);
-  std::cout << "client start" << std::endl;
+  const std::string port = "50051";
+  std::cout << "client start, target port is " << port << std::endl;
   std::cout << "id           : " << id << std::endl;
-  std::string target_str = "localhost:50051";
+  std::string target_str = "localhost:" + port;
 
   Client client(
       grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()),
