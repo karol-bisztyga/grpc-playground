@@ -73,7 +73,7 @@ void Client::pullBackupKey(const std::string pakeKey)
   request.set_pakekey(pakeKey);
 
   grpc::Status status = this->stub->PullBackupKey(&context, request, &response);
-  if (!status.ok())
+  if (!status.ok() || !response.success())
   {
     throw std::runtime_error(status.error_message());
   }
@@ -99,11 +99,11 @@ void Client::pullCompact()
     std::string logChunk = response.logchunk();
     if (compactionChunk.size())
     {
-      std::cout << "received: [" << compactionChunk << "]" << std::endl;
+      std::cout << "received[c]: [" << compactionChunk << "]" << std::endl;
     }
     if (logChunk.size())
     {
-      std::cout << "received: [" << logChunk << "]" << std::endl;
+      std::cout << "received[l]: [" << logChunk << "]" << std::endl;
     }
   }
   std::cout << "done reading the restore stream" << std::endl;
