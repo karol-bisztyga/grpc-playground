@@ -30,13 +30,17 @@ std::string randomString(size_t size = 20)
 
 int main(int argc, char **argv)
 {
-  if (argc != 2)
+  if (argc != 2 && argc != 3)
   {
     std::cout << "please provide an argument with a client id" << std::endl;
+    std::cout << "you can also specify a port as an optional argument" << std::endl;
     return 1;
   }
   std::string id = std::string(argv[1]);
-  const std::string port = "50051";
+  std::string port = "50051";
+  if (argc == 3) {
+    port = std::string(argv[2]);
+  }
   std::cout << "client start, target port is " << port << std::endl;
   std::cout << "id           : " << id << std::endl;
   std::string target_str = "localhost:" + port;
