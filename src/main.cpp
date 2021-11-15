@@ -1,32 +1,11 @@
+#include "Tools.h"
+#include "Test.h"
 #include "Client.h"
 
 #include <grpcpp/grpcpp.h>
 
 #include <iostream>
-#include <random>
 #include <string>
-
-int randomNumber(const int from, const int to)
-{
-  std::random_device rd;
-  std::mt19937 mt(rd());
-  std::uniform_int_distribution<int> dist(from, to);
-
-  return dist(mt);
-}
-
-std::string randomString(size_t size = 20)
-{
-  std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-
-  std::string result;
-
-  for (size_t i = 0; i < size; ++i) {
-    result += str[randomNumber(0, str.size() - 1)];
-  }
-
-  return result;
-}
 
 int main(int argc, char **argv)
 {
@@ -40,6 +19,15 @@ int main(int argc, char **argv)
   std::string port = "50051";
   if (argc == 3) {
     port = std::string(argv[2]);
+  }
+  if (port == "test") {
+    try {
+      doTest();
+      std::cout << "TEST PASSED" << std::endl;
+    } catch(std::runtime_error &e) {
+      std::cout << "TEST FAILED, error: " << e.what() << std::endl;
+    }
+    return 0;
   }
   std::cout << "client start, target port is " << port << std::endl;
   std::cout << "id           : " << id << std::endl;
