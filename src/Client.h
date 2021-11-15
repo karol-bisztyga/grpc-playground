@@ -8,6 +8,12 @@
 #include <string>
 #include <memory>
 
+struct CompactionResponse
+{
+  std::string compaction;
+  std::string logs;
+};
+
 class Client
 {
   std::unique_ptr<backup::BackupService::Stub> stub;
@@ -18,6 +24,6 @@ public:
 
   void resetKey(const std::string newKey, const std::vector<std::string> newCompact);
   void sendLog(const std::string data);
-  void pullBackupKey(const std::string pakeKey);
-  void pullCompact();
+  std::string pullBackupKey(const std::string pakeKey);
+  CompactionResponse pullCompact();
 };
