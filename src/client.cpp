@@ -7,7 +7,7 @@ Client::Client(std::shared_ptr<grpc::Channel> channel, std::string id)
 void Client::resetKey(const std::string newKey, const std::vector<std::string> newCompact)
 {
   grpc::ClientContext context;
-  backup::ResetKeyResponse response;
+  ::google::protobuf::Empty response;
 
   std::unique_ptr<grpc::ClientWriter<backup::ResetKeyRequest>> writer = this->stub->ResetKey(&context, &response);
 
@@ -48,7 +48,7 @@ void Client::sendLog(const std::string data)
 {
   grpc::ClientContext context;
   backup::SendLogRequest request;
-  backup::SendLogResponse response;
+  ::google::protobuf::Empty response;
 
   request.set_userid(this->id);
   request.set_data(data);
@@ -63,7 +63,7 @@ void Client::sendLog(const std::string data)
   std::cout << "log sent" << std::endl;
 }
 
-void Client::pullBackupKey(const std::string pakeKey)
+std::string Client::pullBackupKey(const std::string pakeKey)
 {
   grpc::ClientContext context;
   backup::PullBackupKeyRequest request;
@@ -73,7 +73,7 @@ void Client::pullBackupKey(const std::string pakeKey)
   request.set_pakekey(pakeKey);
 
   grpc::Status status = this->stub->PullBackupKey(&context, request, &response);
-  if (!status.ok() || !response.success())
+  if (!status.ok())
   {
     throw std::runtime_error(status.error_message());
   }
@@ -81,9 +81,11 @@ void Client::pullBackupKey(const std::string pakeKey)
   std::string backupKey = response.encryptedbackupkey();
 
   std::cout << "pull backup key, received [" << backupKey << "]" << std::endl;
+
+  return backupKey;
 }
 
-void Client::pullCompact()
+CompactionResponse Client::pullCompact()
 {
   grpc::ClientContext context;
   backup::PullCompactionRequest request;
@@ -93,6 +95,9 @@ void Client::pullCompact()
 
   std::unique_ptr<grpc::ClientReader<backup::PullCompactionResponse>> stream = this->stub->PullCompaction(&context, request);
   std::cout << "reading compact stream:" << std::endl;
+
+  CompactionResponse compResponse;
+
   while (stream->Read(&response))
   {
     std::string compactionChunk = response.compactionchunk();
@@ -100,11 +105,15 @@ void Client::pullCompact()
     if (compactionChunk.size())
     {
       std::cout << "received[c]: [" << compactionChunk << "]" << std::endl;
+      compResponse.compaction += compactionChunk;
     }
     if (logChunk.size())
     {
       std::cout << "received[l]: [" << logChunk << "]" << std::endl;
+      compResponse.logs += logChunk;
     }
   }
   std::cout << "done reading the restore stream" << std::endl;
+
+  return compResponse;
 }
