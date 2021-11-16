@@ -43,7 +43,7 @@ void TunnelBrokerClient::sendPong()
 {
   grpc::ClientContext context;
   tunnelbroker::PongRequest request;
-  tunnelbroker::PongResponse response;
+  ::google::protobuf::Empty response;
 
   request.set_userid(this->id);
   request.set_devicetoken(this->deviceToken);
