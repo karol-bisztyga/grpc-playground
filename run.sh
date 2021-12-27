@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./cmake/build/bin/client 1 $1
+./cmake/build/bin/client $1
 
