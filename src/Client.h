@@ -7,14 +7,23 @@
 
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 class Client
 {
   std::unique_ptr<blob::BlobService::Stub> stub;
+
 public:
+  // this represents what's have to be persisted by the users of the blob service
+  // note, that hashes will not have to be persisted
+  // they're going to be calculated on the fly but we're going to keep them here
+  // to make those tests simpler for us
+  //               reverse index, hash
+  std::unordered_map<std::string, std::string> persist; 
+
   Client(std::shared_ptr<grpc::Channel> channel);
 
-  void put(const std::string &reverseIndex, std::function<std::string()> &dataChunksObtainer);
+  void put(const std::string &reverseIndex, const std::string &hash, std::function<std::string()> &dataChunksObtainer);
   void get(const std::string &reverseIndex, std::function<void(std::string)> &callback);
   bool remove(const std::string &reverseIndex);
 };
