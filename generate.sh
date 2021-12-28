@@ -11,4 +11,4 @@ protoc -I=../../protos --cpp_out=_generated --grpc_out=_generated --plugin=proto
 
 cd ../..
 
-echo "ALL GOOD"
+echo "GENERATE - ALL GOOD"

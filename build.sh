@@ -19,4 +19,4 @@ cmake --build . --target ${TARGET}
 
 cd ../..
 
-echo "ALL GOOD"
+echo "BUILD - ALL GOOD"
