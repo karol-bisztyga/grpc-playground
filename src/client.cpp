@@ -1,9 +1,10 @@
 #include "Client.h"
+#include "Tools.h"
 
 Client::Client(std::shared_ptr<grpc::Channel> channel)
     : stub(blob::BlobService::NewStub(channel)) {}
 
-void Client::put(const std::string &reverseIndex, const std::string &hash, std::function<std::string()> &dataChunksObtainer)
+void Client::put(const std::string &reverseIndex, const std::string &hash, const std::string &data)
 {
   grpc::ClientContext context;
   blob::PutRequest request;
@@ -23,16 +24,17 @@ void Client::put(const std::string &reverseIndex, const std::string &hash, std::
   }
   request.set_filehash("");
 
-  size_t chunkCounter = 0;
-  do {
-    std::cout << "reading chunk " << ++chunkCounter << std::endl;
-    request.set_datachunk(dataChunksObtainer());
-    if (!writer->Write(request))
-    {
+  const size_t chunkSize = GRPC_CHUNK_SIZE_LIMIT - GRPC_METADATA_SIZE_PER_MESSAGE;
+  for (size_t i = 0; i < data.size(); ) {
+    const size_t len = std::min(i + chunkSize, data.size()) - i;
+    std::cout << "writing chunk " << i << "-" << (len + i) << std::endl;
+    request.set_datachunk(data.substr(i, len));
+    if (!writer->Write(request)) {
       std::cout << "stream interrupted" << std::endl;
       return;
     }
-  } while(request.datachunk().size());
+    i += chunkSize;
+  }
 
   writer->WritesDone();
   grpc::Status status = writer->Finish();

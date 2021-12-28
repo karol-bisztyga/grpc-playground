@@ -36,6 +36,8 @@ else()
   set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
 endif()
 
+find_package(OpenSSL REQUIRED)
+
 # Proto file
 get_filename_component(hw_proto "./protos/helloworld.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
@@ -61,6 +63,7 @@ target_link_libraries(
   
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF}
+  OpenSSL::SSL
 )
 
 install(

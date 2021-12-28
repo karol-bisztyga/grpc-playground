@@ -12,4 +12,4 @@ make
 
 cd ../..
 
-echo "ALL GOOD"
+echo "BUILD - ALL GOOD"

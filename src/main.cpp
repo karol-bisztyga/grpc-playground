@@ -2,45 +2,50 @@
 #include "Client.h"
 
 #include <grpcpp/grpcpp.h>
+#include <openssl/sha.h>
 
 #include <iostream>
 #include <string>
+#include <iomanip>
+#include <sstream>
 
 #define MB 1024 * 1024
 
-void put(Client &client, const size_t dataChunkSize, size_t nChunks=0, char forcedFirstChar=0) {
+void put(Client &client, size_t dataSize=0, char forcedFirstChar=0) {
     std::cout << "put data" << std::endl;
 
     const std::string reverseIndex = randomString();
-    const std::string hash = std::to_string(currentTimestamp());
 
     if (client.persist.find(reverseIndex) != client.persist.end()) {
       std::cout << "reverse index already exists, aborting: " << reverseIndex << std::endl;
       return;
     }
 
-    if (nChunks == 0) {
-      nChunks = randomNumber(5, 10);
+    if (dataSize == 0) {
+      dataSize = randomNumber(100,500);
     }
-    size_t chunkCounter = 0;
-    std::function<std::string()> dataChunksObtainer = [nChunks, &chunkCounter, dataChunkSize, forcedFirstChar]()
-    {
-      if (chunkCounter++ >= nChunks)
-      {
-        return std::string("");
-      }
-      std::cout << "updating chunk " << chunkCounter << std::endl;
-      if (forcedFirstChar == 0)
-      {
-        return randomString(dataChunkSize);
-      }
-      std::string result;
-      result.resize(dataChunkSize);
-      memset(result.data(), forcedFirstChar+chunkCounter, dataChunkSize);
-      return result;
-    };
-    client.put(reverseIndex, hash, dataChunksObtainer);
-    client.persist.insert(std::pair<std::string, std::string>(reverseIndex, hash));
+
+    std::string data;
+    if (forcedFirstChar) {
+      data.resize(dataSize);
+      memset(data.data(), forcedFirstChar, dataSize);
+    } else {
+      data = randomString(dataSize);
+    }
+
+    unsigned char hash[SHA512_DIGEST_LENGTH];
+    SHA512(
+        (const unsigned char *)data.data(),
+        data.size(),
+        hash);
+
+    std::ostringstream hashStream;
+    for (int i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+      hashStream << std::hex << std::setfill('0') << std::setw(2) << std::nouppercase
+                 << (int)hash[i];
+    }
+    client.put(reverseIndex, hashStream.str(), data);
+    client.persist.insert(std::pair<std::string, std::string>(reverseIndex, hashStream.str()));
 }
 
 int main(int argc, char **argv)
@@ -71,7 +76,7 @@ int main(int argc, char **argv)
       std::cout << "(empty)";
     } else {
       for (auto it = client.persist.begin(); it != client.persist.end(); it++) {
-        std::cout << it->first << "/" << it->second << std::endl;
+        std::cout << it->first << " / " << it->second << std::endl;
       }
     }
     std::cout << std::endl;
@@ -100,12 +105,12 @@ int main(int argc, char **argv)
       }
       case 'p':
       {
-        put(client, 100);
+        put(client);
         break;
       }
       case 'P':
       {
-        put(client, MB, 8, 64);
+        put(client, MB * 8, 66);
         break;
       }
       case 'r':
