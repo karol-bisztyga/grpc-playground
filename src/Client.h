@@ -23,7 +23,7 @@ public:
 
   Client(std::shared_ptr<grpc::Channel> channel);
 
-  void put(const std::string &reverseIndex, const std::string &hash, const std::string &data);
+  bool put(const std::string &reverseIndex, const std::string &hash, const std::string &data);
   void get(const std::string &reverseIndex, std::function<void(std::string)> &callback);
   bool remove(const std::string &reverseIndex);
 };

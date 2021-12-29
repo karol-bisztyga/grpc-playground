@@ -4,7 +4,7 @@
 Client::Client(std::shared_ptr<grpc::Channel> channel)
     : stub(blob::BlobService::NewStub(channel)) {}
 
-void Client::put(const std::string &reverseIndex, const std::string &hash, const std::string &data)
+bool Client::put(const std::string &reverseIndex, const std::string &hash, const std::string &data)
 {
   grpc::ClientContext context;
   blob::PutRequest request;
@@ -13,14 +13,14 @@ void Client::put(const std::string &reverseIndex, const std::string &hash, const
 
   request.set_reverseindex(reverseIndex);
   if (!writer->Write(request)) {
-    std::cout << "stream interrupted" << std::endl;
-    return;
+    std::cout << "stream interrupted 1" << std::endl;
+    return false;
   }
   request.set_reverseindex("");
   request.set_filehash(hash);
   if (!writer->Write(request)) {
-    std::cout << "stream interrupted" << std::endl;
-    return;
+    std::cout << "stream interrupted 2" << std::endl;
+    return false;
   }
   request.set_filehash("");
 
@@ -30,8 +30,10 @@ void Client::put(const std::string &reverseIndex, const std::string &hash, const
     std::cout << "writing chunk " << i << "-" << (len + i) << std::endl;
     request.set_datachunk(data.substr(i, len));
     if (!writer->Write(request)) {
-      std::cout << "stream interrupted" << std::endl;
-      return;
+      std::cout << "failed to write parts, aborting on bytes: " << std::endl;
+      // in a case when the item already exists on S3 we just want to gracefully
+      // abort pushing parts but it still can be a successfull operation
+      break;
     }
     i += chunkSize;
   }
@@ -40,9 +42,10 @@ void Client::put(const std::string &reverseIndex, const std::string &hash, const
   grpc::Status status = writer->Finish();
   if (!status.ok()) {
     std::cout << "an error ocurred: " << status.error_message() << std::endl;
-    return;
+    return false;
   }
   std::cout << "done writing chunks" << std::endl;
+  return true;
 }
 
 void Client::get(const std::string &reverseIndex, std::function<void(std::string)> &callback) {
@@ -81,6 +84,6 @@ bool Client::remove(const std::string &reverseIndex) {
     std::cout << "an error ocurred: " << status.error_message() << std::endl;
     return false;
   }
-  std::cout << "done removing" << std::endl;
+  std::cout << "done removing " << reverseIndex << std::endl;
   return true;
 }
