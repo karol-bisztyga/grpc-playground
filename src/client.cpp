@@ -8,38 +8,49 @@ bool Client::put(const std::string &reverseIndex, const std::string &hash, const
 {
   grpc::ClientContext context;
   blob::PutRequest request;
-  google::protobuf::Empty response;
-  std::unique_ptr<grpc::ClientWriter<blob::PutRequest>> writer = this->stub->Put(&context, &response);
+  blob::PutResponse response;
+  std::unique_ptr<grpc::ClientReaderWriter<blob::PutRequest, blob::PutResponse> > stream = this->stub->Put(&context);
 
-  request.set_reverseindex(reverseIndex);
-  if (!writer->Write(request)) {
+  request.set_holder(reverseIndex);
+  if (!stream->Write(request)) {
     std::cout << "stream interrupted 1" << std::endl;
     return false;
   }
-  request.set_reverseindex("");
-  request.set_filehash(hash);
-  if (!writer->Write(request)) {
+  request.set_holder("");
+  request.set_blobhash(hash);
+  if (!stream->Write(request)) {
     std::cout << "stream interrupted 2" << std::endl;
     return false;
   }
-  request.set_filehash("");
 
-  const size_t chunkSize = GRPC_CHUNK_SIZE_LIMIT - GRPC_METADATA_SIZE_PER_MESSAGE;
-  for (size_t i = 0; i < data.size(); ) {
-    const size_t len = std::min(i + chunkSize, data.size()) - i;
-    std::cout << "writing chunk " << i << "-" << (len + i) << std::endl;
-    request.set_datachunk(data.substr(i, len));
-    if (!writer->Write(request)) {
-      std::cout << "failed to write parts, aborting on bytes: " << std::endl;
-      // in a case when the item already exists on S3 we just want to gracefully
-      // abort pushing parts but it still can be a successfull operation
-      break;
-    }
-    i += chunkSize;
+  if(!stream->Read(&response)) {
+    throw std::runtime_error("reading put response failed");
   }
+  if (!response.dataexists()) {
+    std::cout << "data does not exist, uploading..." << std::endl;
+    request.set_blobhash("");
+    const size_t chunkSize = GRPC_CHUNK_SIZE_LIMIT - GRPC_METADATA_SIZE_PER_MESSAGE;
+    for (size_t i = 0; i < data.size();)
+    {
+      const size_t len = std::min(i + chunkSize, data.size()) - i;
+      std::cout << "writing chunk " << i << "-" << (len + i) << std::endl;
+      request.set_datachunk(data.substr(i, len));
+      if (!stream->Write(request))
+      {
+        std::cout << "failed to write parts, aborting on bytes: " << std::endl;
+        // in a case when the item already exists on S3 we just want to gracefully
+        // abort pushing parts but it still can be a successfull operation
+        break;
+      }
+      i += chunkSize;
+    }
+  } else {
+    std::cout << "data exists, aborted upload" << std::endl;
+  }
+  std::cout << "finishing" << std::endl;
 
-  writer->WritesDone();
-  grpc::Status status = writer->Finish();
+  stream->WritesDone();
+  grpc::Status status = stream->Finish();
   if (!status.ok()) {
     std::cout << "an error ocurred: " << status.error_message() << std::endl;
     return false;
@@ -53,7 +64,7 @@ void Client::get(const std::string &reverseIndex, std::function<void(std::string
   blob::GetRequest request;
   blob::GetResponse response;
 
-  request.set_reverseindex(reverseIndex);
+  request.set_holder(reverseIndex);
 
   std::unique_ptr<grpc::ClientReader<blob::GetResponse>> stream = this->stub->Get(&context, request);
   std::cout << "reading stream:" << std::endl;
@@ -77,7 +88,7 @@ bool Client::remove(const std::string &reverseIndex) {
   blob::RemoveRequest request;
   google::protobuf::Empty response;
 
-  request.set_reverseindex(reverseIndex);
+  request.set_holder(reverseIndex);
 
   grpc::Status status = this->stub->Remove(&context, request, &response);
   if (!status.ok()) {
