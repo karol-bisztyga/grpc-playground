@@ -8,6 +8,7 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
+#include <fstream>
 
 #define MB 1024 * 1024
 
@@ -59,16 +60,16 @@ void put(Client &client, size_t dataSize = 0, char forcedFirstChar = 0)
 
 int main(int argc, char **argv)
 {
+  const std::string hostname = "blob.prod.comm.dev";
   std::string port = "50053";
   std::cout << "you can specify a port as an optional argument(default is " << port << ")" << std::endl;
   if (argc >= 2)
   {
     port = std::string(argv[1]);
   }
-  std::cout << "client start, target port is " << port << std::endl;
-  std::string target_str = "localhost:" + port;
-
-  Client client(grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
+  std::string target_str = hostname + ":" + port;
+  std::cout << "client start on: " << target_str << std::endl;
+  Client client(grpc::CreateChannel(target_str, grpc::SslCredentials(grpc::SslCredentialsOptions())));
 
   char option = '?';
   while (option != 'e')
@@ -125,7 +126,7 @@ int main(int argc, char **argv)
       }
       case 'P':
       {
-        put(client, MB * 8, 66);
+        put(client, MB * 20, 66);
         break;
       }
       case 'r':
