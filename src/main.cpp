@@ -58,18 +58,37 @@ void put(Client &client, size_t dataSize = 0, char forcedFirstChar = 0)
   }
 }
 
+enum class Mode
+{
+  LOCALHOST = 1,
+  LB = 2,
+};
+
 int main(int argc, char **argv)
 {
-  const std::string hostname = "blob.prod.comm.dev";
-  std::string port = "50053";
-  std::cout << "you can specify a port as an optional argument(default is " << port << ")" << std::endl;
-  if (argc >= 2)
+  std::string targetStr;
+  std::unique_ptr<Client> client;
+
+  Mode mode = Mode::LOCALHOST;
+  switch(mode)
   {
-    port = std::string(argv[1]);
+  case Mode::LOCALHOST:
+  {
+    targetStr = "localhost:50053";
+    client = std::make_unique<Client>(grpc::CreateChannel(
+        targetStr,
+        grpc::InsecureChannelCredentials()));
+    break;
   }
-  std::string target_str = hostname + ":" + port;
-  std::cout << "client start on: " << target_str << std::endl;
-  Client client(grpc::CreateChannel(target_str, grpc::SslCredentials(grpc::SslCredentialsOptions())));
+  case Mode::LB:
+  {
+    targetStr = "blob.prod.comm.dev";
+    client = std::make_unique<Client>(grpc::CreateChannel(targetStr, grpc::SslCredentials(grpc::SslCredentialsOptions())));
+    break;
+  }
+  }
+
+  std::cout << "client start on: " << targetStr << std::endl;
 
   char option = '?';
   while (option != 'e')
@@ -84,13 +103,13 @@ int main(int argc, char **argv)
     std::cout << "[e] exit" << std::endl;
     std::cout << std::endl
               << "current persist[rev index/hash]:" << std::endl;
-    if (!client.persist.size())
+    if (!client->persist.size())
     {
       std::cout << "(empty)";
     }
     else
     {
-      for (auto it = client.persist.begin(); it != client.persist.end(); it++)
+      for (auto it = client->persist.begin(); it != client->persist.end(); it++)
       {
         std::cout << it->first << " / " << it->second << std::endl;
       }
@@ -116,17 +135,17 @@ int main(int argc, char **argv)
         {
           std::cout << "read chunk(clb) [" << chunk << "]" << std::endl;
         };
-        client.get(reverseIndex, callback);
+        client->get(reverseIndex, callback);
         break;
       }
       case 'p':
       {
-        put(client);
+        put(*client);
         break;
       }
       case 'P':
       {
-        put(client, MB * 20, 66);
+        put(*client, MB * 20, 66);
         break;
       }
       case 'r':
@@ -134,20 +153,20 @@ int main(int argc, char **argv)
         std::cout << "remove data, please enter a desired reverse index" << std::endl;
         std::string reverseIndex;
         std::cin >> reverseIndex;
-        if (client.remove(reverseIndex))
+        if (client->remove(reverseIndex))
         {
-          client.persist.erase(reverseIndex);
+          client->persist.erase(reverseIndex);
         }
         break;
       }
       case 'a':
       {
-        while(!client.persist.empty()) {
-          auto item = client.persist.begin();
+        while(!client->persist.empty()) {
+          auto item = client->persist.begin();
           std::cout << "removing " << item->first << std::endl;
-          if (client.remove(item->first))
+          if (client->remove(item->first))
           {
-            client.persist.erase(item->first);
+            client->persist.erase(item->first);
           }
         }
         break;
