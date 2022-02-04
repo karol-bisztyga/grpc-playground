@@ -5,23 +5,19 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
-#include "../_generated/helloworld.pb.h"
-#include "../_generated/helloworld.grpc.pb.h"
+#include "../_generated/example.pb.h"
+#include "../_generated/example.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
-using helloworld::Greeter;
-using helloworld::HelloReply;
-using helloworld::HelloRequest;
 
 // Logic and data behind the server's behavior.
-class GreeterServiceImpl final : public Greeter::Service {
-  Status SayHello(ServerContext* context, const HelloRequest* request,
-                  HelloReply* reply) override {
-    std::string prefix("Hello ");
-    reply->set_message(prefix + request->name());
+class GreeterServiceImpl final : public example::ExampleService::Service
+{
+  grpc::Status ExchangeData(::grpc::ServerContext *context, grpc::ServerReaderWriter<example::DataResponse, example::DataRequest> *stream) override
+  {
     return Status::OK;
   }
 };

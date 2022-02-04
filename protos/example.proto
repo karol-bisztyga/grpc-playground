@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package example;
+
+service ExampleService {
+  rpc ExchangeData(stream DataRequest) returns(stream DataResponse) {}
+}
+
+message DataRequest {
+  bytes data = 1;
+}
+
+message DataResponse {
+  bytes data = 1;
+}
