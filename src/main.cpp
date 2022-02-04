@@ -69,7 +69,7 @@ int main(int argc, char **argv)
   std::string targetStr;
   std::unique_ptr<Client> client;
 
-  Mode mode = Mode::LOCALHOST;
+  Mode mode = Mode::LB;
   switch(mode)
   {
   case Mode::LOCALHOST:
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   }
   case Mode::LB:
   {
-    targetStr = "blob.prod.comm.dev";
+    targetStr = "blob.prod.comm.dev:50053";
     client = std::make_unique<Client>(grpc::CreateChannel(targetStr, grpc::SslCredentials(grpc::SslCredentialsOptions())));
     break;
   }
