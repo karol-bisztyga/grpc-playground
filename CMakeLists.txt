@@ -48,40 +48,20 @@ include_directories(
 
 # CLIENT
 add_executable(
-  example_client
+  serialization_test
 
   ${GENERATED_CODE}
-  src/client.cpp
+  src/SerializationTest.cpp
 )
 
 target_link_libraries(
-  example_client
+  serialization_test
   
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF}
 )
 
 install(
-  TARGETS example_client
-  RUNTIME DESTINATION bin/
-)
-
-#SERVER
-add_executable(
-  example_server
-
-  ${GENERATED_CODE}
-  src/server.cpp
-)
-
-target_link_libraries(
-  example_server
-  
-  ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF}
-)
-
-install(
-  TARGETS example_server
+  TARGETS serialization_test
   RUNTIME DESTINATION bin/
 )
