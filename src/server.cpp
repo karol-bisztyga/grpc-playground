@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <thread>
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -9,48 +10,85 @@
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
-
-class GreeterServiceImpl final : public example::ExampleService::Service
+class Reactor : public grpc::ServerBidiReactor<example::DataRequest, example::DataResponse>
 {
-  grpc::Status ExchangeData(::grpc::ServerContext *context, grpc::ServerReaderWriter<example::DataResponse, example::DataRequest> *stream) override {
-    example::DataRequest request;
-    example::DataResponse response;
+  example::DataRequest request;
+  example::DataResponse response;
+  bool finished = false;
 
-    std::vector<std::string> responses = {"", "response 4", "response 3", "response 2", "response 1"};
+  size_t responseID = 0;
 
-    while(stream->Read(&request)) {
-      std::string receivedData = request.data();
-      std::string dataToSend = responses.back();
-      response.set_data(dataToSend);
-      responses.pop_back();
-
-      std::cout << "received data: [" << receivedData << "], sending data: [" << dataToSend << "]" << std::endl;
-      stream->Write(response);
+  void finish()
+  {
+    if (this->finished) {
+      return;
     }
-    std::cout << "no more reads, terminating session" << std::endl;
-    return Status::OK;
+    this->finished = true;
+    Finish(grpc::Status::OK);
+  }
+
+public:
+  Reactor() {
+    StartRead(&this->request);
+  }
+
+  void OnDone() override
+  {
+    GPR_ASSERT(this->finished);
+    delete this;
+  }
+
+  void OnReadDone(bool ok) override
+  {
+    if (!ok) {
+      this->finish();
+      return;
+    }
+    std::cout << "data from client: [" << this->request.data() << "] " << this->responseID << std::endl;
+
+    this->response.set_data("response " + std::to_string(++this->responseID));
+    StartWrite(&this->response);
+  }
+
+  void OnWriteDone(bool ok) override
+  {
+    if (!ok) {
+      gpr_log(GPR_ERROR, "Server write failed");
+      return;
+    }
+    if (this->responseID >= 3) {
+      std::cout << "already sent 3 responses, terminating connection" << std::endl;
+      this->finish();
+    }
+    StartRead(&this->request);
   }
 };
 
-void RunServer() {
-  std::string server_address("localhost:50051");
-  GreeterServiceImpl service;
+class ExampleServiceImpl final : public example::ExampleService::CallbackService
+{
+  grpc::ServerBidiReactor<example::DataRequest, example::DataResponse> *
+  ExchangeData(grpc::CallbackServerContext *context) override
+  {
+    return new Reactor();
+  }
+};
 
-  grpc::EnableDefaultHealthCheckService(true);
-  ServerBuilder builder;
+void RunServer()
+{
+  std::string server_address("localhost:50051");
+  ExampleServiceImpl service;
+
+  grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&service);
-  std::unique_ptr<Server> server(builder.BuildAndStart());
+  std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
   std::cout << "Server listening on " << server_address << std::endl;
 
   server->Wait();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
   RunServer();
 
   return 0;
