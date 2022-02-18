@@ -5,31 +5,39 @@
 #include <thread>
 
 #include <grpcpp/grpcpp.h>
-#include <grpcpp/health_check_service_interface.h>
 
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
-class Reactor : public grpc::ServerBidiReactor<example::DataRequest, example::DataResponse>
+struct EndConnectionError : public std::exception
 {
-  example::DataRequest request;
-  example::DataResponse response;
-  bool finished = false;
+  const char *what() const throw()
+  {
+    return "connection ended";
+  }
+};
 
-  size_t responseID = 0;
+template <class Request, class Response>
+class ReactorBase : public grpc::ServerBidiReactor<Request, Response>
+{
+  Request request;
+  Response response;
+  bool finished = false;
 
   void finish()
   {
-    if (this->finished) {
+    if (this->finished)
+    {
       return;
     }
     this->finished = true;
-    Finish(grpc::Status::OK);
+    this->Finish(grpc::Status::OK);
   }
 
 public:
-  Reactor() {
-    StartRead(&this->request);
+  ReactorBase()
+  {
+    this->StartRead(&this->request);
   }
 
   void OnDone() override
@@ -40,36 +48,62 @@ public:
 
   void OnReadDone(bool ok) override
   {
-    if (!ok) {
+    if (!ok)
+    {
       this->finish();
       return;
     }
-    std::cout << "data from client: [" << this->request.data() << "] " << this->responseID << std::endl;
-
-    this->response.set_data("response " + std::to_string(++this->responseID));
-    StartWrite(&this->response);
+    try
+    {
+      this->response = this->handleRequest(this->request);
+      this->StartWrite(&this->response);
+    }
+    catch (EndConnectionError &e)
+    {
+      this->finish();
+    }
   }
 
   void OnWriteDone(bool ok) override
   {
-    if (!ok) {
+    if (!ok)
+    {
       gpr_log(GPR_ERROR, "Server write failed");
       return;
     }
-    if (this->responseID >= 3) {
-      std::cout << "already sent 3 responses, terminating connection" << std::endl;
-      this->finish();
+    this->StartRead(&this->request);
+  }
+
+  virtual Response handleRequest(Request request) = 0;
+};
+
+class ExchangeReactor : public ReactorBase<example::DataRequest, example::DataResponse>
+{
+  size_t id = 0;
+
+public:
+  example::DataResponse handleRequest(example::DataRequest request) override
+  {
+    ++this->id;
+    std::cout << "here CLB: " << request.data() << "/" << this->id << std::endl;
+    if (this->id > 3 || request.data() == "exit")
+    {
+      this->id = 0;
+      throw EndConnectionError();
     }
-    StartRead(&this->request);
+    example::DataResponse response;
+    response.set_data("response " + std::to_string(this->id));
+    return response;
   }
 };
 
 class ExampleServiceImpl final : public example::ExampleService::CallbackService
 {
+public:
   grpc::ServerBidiReactor<example::DataRequest, example::DataResponse> *
   ExchangeData(grpc::CallbackServerContext *context) override
   {
-    return new Reactor();
+    return new ExchangeReactor();
   }
 };
 
