@@ -24,14 +24,14 @@ class ReactorBase : public grpc::ServerBidiReactor<Request, Response>
   Response response;
   bool finished = false;
 
-  void finish()
+  void finish(grpc::Status status = grpc::Status::OK)
   {
     if (this->finished)
     {
       return;
     }
     this->finished = true;
-    this->Finish(grpc::Status::OK);
+    this->Finish(status);
   }
 
 public:
@@ -62,6 +62,9 @@ public:
     {
       this->finish();
     }
+    catch (std::runtime_error &e) {
+      this->finish(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
+    }
   }
 
   void OnWriteDone(bool ok) override
@@ -86,6 +89,9 @@ public:
   {
     ++this->id;
     std::cout << "here CLB: " << request.data() << "/" << this->id << std::endl;
+    if (id > 2) {
+      throw std::runtime_error("test error");
+    }
     if (this->id > 3 || request.data() == "exit")
     {
       this->id = 0;
