@@ -64,7 +64,9 @@ public:
     {
       this->finish();
     }
-    catch (std::runtime_error &e) {
+    catch (std::runtime_error &e)
+    {
+      std::cout << "error " << e.what() << std::endl;
       this->finish(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
     }
   }
@@ -85,18 +87,22 @@ public:
 class ExchangeReactor : public ReactorBase<example::DataRequest, example::DataResponse>
 {
   std::vector<std::string> responses = {"", "res 4", "res 3", "res 2", "res 1"};
-
+  size_t i=0;
 public:
   example::DataResponse handleRequest(example::DataRequest request) override
   {
     std::cout << "received: " << request.data() << "/ gonna respond: " << this->responses.back() << std::endl;
     if (this->responses.empty()) {
-      // throw std::runtime_error("responses empty");
       throw EndConnectionError();
+    }
+    if (i>1)
+    {
+      throw std::runtime_error("test error");
     }
     example::DataResponse response;
     response.set_data(this->responses.back());
     this->responses.pop_back();
+    ++i;
     return response;
   }
 };
