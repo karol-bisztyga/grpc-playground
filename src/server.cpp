@@ -26,6 +26,7 @@ class ReactorBase : public grpc::ServerBidiReactor<Request, Response>
 
   void finish(grpc::Status status = grpc::Status::OK)
   {
+    std::cout << "=> finish" << std::endl;
     if (this->finished)
     {
       return;
@@ -42,6 +43,7 @@ public:
 
   void OnDone() override
   {
+    std::cout << "=> done" << std::endl;
     GPR_ASSERT(this->finished);
     delete this;
   }
@@ -82,23 +84,19 @@ public:
 
 class ExchangeReactor : public ReactorBase<example::DataRequest, example::DataResponse>
 {
-  size_t id = 0;
+  std::vector<std::string> responses = {"", "res 4", "res 3", "res 2", "res 1"};
 
 public:
   example::DataResponse handleRequest(example::DataRequest request) override
   {
-    ++this->id;
-    std::cout << "here CLB: " << request.data() << "/" << this->id << std::endl;
-    if (id > 2) {
-      throw std::runtime_error("test error");
-    }
-    if (this->id > 3 || request.data() == "exit")
-    {
-      this->id = 0;
+    std::cout << "received: " << request.data() << "/ gonna respond: " << this->responses.back() << std::endl;
+    if (this->responses.empty()) {
+      // throw std::runtime_error("responses empty");
       throw EndConnectionError();
     }
     example::DataResponse response;
-    response.set_data("response " + std::to_string(this->id));
+    response.set_data(this->responses.back());
+    this->responses.pop_back();
     return response;
   }
 };

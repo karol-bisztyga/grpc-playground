@@ -46,6 +46,26 @@ include_directories(
   ./cmake/_generated
 )
 
+# CLIENT
+add_executable(
+  example_client
+
+  ${GENERATED_CODE}
+  src/client.cpp
+)
+
+target_link_libraries(
+  example_client
+  
+  ${_GRPC_GRPCPP}
+  ${_PROTOBUF_LIBPROTOBUF}
+)
+
+install(
+  TARGETS example_client
+  RUNTIME DESTINATION bin/
+)
+
 #SERVER
 add_executable(
   example_server
