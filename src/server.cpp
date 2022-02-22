@@ -100,7 +100,7 @@ public:
       throw std::runtime_error("test error");
     }
     example::DataResponse response;
-    response.set_data(this->responses.back());
+    response.set_data(this->responses.back() + "/" + std::to_string(i));
     this->responses.pop_back();
     ++i;
     return response;

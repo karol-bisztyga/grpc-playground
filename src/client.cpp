@@ -3,18 +3,24 @@
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
+#include <memory>
+
 class Reactor : public grpc::ClientBidiReactor<example::DataRequest, example::DataResponse>
 {
   grpc::ClientContext context;
   example::DataRequest request;
   example::DataResponse response;
-  std::mutex mtx;
-  std::condition_variable cv;
   grpc::Status status;
   bool done = false;
   size_t counter = 0;
 
-  void NextWrite()
+public:
+  Reactor(example::ExampleService::Stub *stub)
+  {
+    stub->async()->ExchangeData(&this->context, this);
+  }
+
+  void NextWrite(std::string msg)
   {
     if (this->counter && this->response.data().empty())
     {
@@ -22,16 +28,17 @@ class Reactor : public grpc::ClientBidiReactor<example::DataRequest, example::Da
       this->StartWritesDone();
       return;
     }
-    this->request.set_data("hello " + std::to_string(++this->counter));
+    this->request.set_data(msg);
     StartWrite(&this->request);
+    if (!this->counter)
+    {
+      StartCall();
+    }
+    ++this->counter;
   }
 
-public:
-  Reactor(example::ExampleService::Stub *stub)
-  {
-    stub->async()->ExchangeData(&this->context, this);
-    NextWrite();
-    StartCall();
+  bool isDone() {
+    return this->done;
   }
 
   void OnWriteDone(bool ok) override
@@ -49,44 +56,27 @@ public:
       return;
     }
     std::cout << "Got message [" << this->response.data() << "]" << std::endl;
-    NextWrite();
   }
 
   void OnDone(const grpc::Status &status) override
   {
     std::cout << "- HERE OnDone" << std::endl;
     std::cout << "DONE" << std::endl;
-    std::unique_lock<std::mutex> l(this->mtx);
     this->status = status;
     this->done = true;
-    this->cv.notify_one();
-  }
-
-  grpc::Status Await()
-  {
-    std::unique_lock<std::mutex> l(this->mtx);
-    this->cv.wait(l, [this]
-                  { return this->done; });
-    return std::move(this->status);
   }
 };
 
 class Client
 {
 public:
+  std::unique_ptr<Reactor> reactor;
+
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
-  {}
-
-  void ExchangeData()
   {
-    Reactor reactor(this->stub.get());
-    grpc::Status status = std::move(reactor.Await());
-    if (!status.ok()) {
-      std::cout << "Rpc failed: " << status.error_message() << std::endl;
-    }
+    this->reactor = std::make_unique<Reactor>(this->stub.get());
   }
-
 private:
   std::unique_ptr<example::ExampleService::Stub> stub;
 };
@@ -95,7 +85,19 @@ int main(int argc, char **argv)
 {
   Client client(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
-  client.ExchangeData();
+  while (!client.reactor->isDone())
+  {
+    std::string str;
+    std::cout << "enter a fake message: ";
+    std::getline(std::cin, str);
+    if (client.reactor->isDone()) {
+      std::cout << "connection lost, aborting" << std::endl;
+      break;
+    }
+    std::cout << "enter a real message: ";
+    std::getline(std::cin, str);
+    client.reactor->NextWrite(str);
+  }
 
   return 0;
 }
