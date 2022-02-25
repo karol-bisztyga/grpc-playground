@@ -3,6 +3,7 @@
 #include <grpcpp/grpcpp.h>
 #include <iostream>
 #include <string>
+#include <memory>
 
 template <class Request, class Response>
 class ReactorBase : public grpc::ServerBidiReactor<Request, Response> {
@@ -18,7 +19,7 @@ public:
   void OnReadDone(bool ok) override;
   void OnWriteDone(bool ok) override;
 
-  virtual grpc::Status handleRequest(Request request, Response *response) = 0;
+  virtual std::unique_ptr<grpc::Status> handleRequest(Request request, Response *response) = 0;
 };
 
 template <class Request, class Response>
@@ -43,9 +44,9 @@ void ReactorBase<Request, Response>::OnReadDone(bool ok) {
     return;
   }
   try {
-    grpc::Status status = this->handleRequest(this->request, &this->response);
-    if (status.ok()) {
-      this->finish(status);
+    std::unique_ptr<grpc::Status> status = this->handleRequest(this->request, &this->response);
+    if (status != nullptr) {
+      this->finish(*status);
       return;
     }
     this->StartWrite(&this->response);

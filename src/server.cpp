@@ -13,14 +13,14 @@
 
 class ExchangeReactor : public ReactorBase<example::DataRequest, example::DataResponse>
 {
-  std::vector<std::string> responses = {"", "res 4", "res 3", "res 2", "res 1"};
+  std::vector<std::string> responses = {"res 4", "res 3", "res 2", "res 1"};
   size_t i=0;
 public:
-  grpc::Status handleRequest(example::DataRequest request, example::DataResponse *response) override
+  std::unique_ptr<grpc::Status> handleRequest(example::DataRequest request, example::DataResponse *response) override
   {
     std::cout << "received: " << request.data() << "/ gonna respond: " << this->responses.back() << std::endl;
     if (this->responses.empty()) {
-      return grpc::Status(grpc::StatusCode::CANCELLED, "empty response");
+      return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
     if (i>1)
     {
@@ -29,7 +29,7 @@ public:
     response->set_data(this->responses.back() + "/" + std::to_string(i));
     this->responses.pop_back();
     ++i;
-    return grpc::Status::OK;
+    return nullptr;
   }
 };
 
