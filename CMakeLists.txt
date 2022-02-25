@@ -44,6 +44,8 @@ file(GLOB GENERATED_CODE "./cmake/_generated/*.cc")
 
 include_directories(
   ./cmake/_generated
+  ./src/server
+  ./src/client
 )
 
 # CLIENT
@@ -51,7 +53,7 @@ add_executable(
   example_client
 
   ${GENERATED_CODE}
-  src/client.cpp
+  src/client/client.cpp
 )
 
 target_link_libraries(
@@ -71,7 +73,7 @@ add_executable(
   example_server
 
   ${GENERATED_CODE}
-  src/server.cpp
+  src/server/server.cpp
 )
 
 target_link_libraries(
