@@ -6,14 +6,14 @@
 #include <memory>
 
 template <class Request, class Response>
-class ReactorBase : public grpc::ServerBidiReactor<Request, Response> {
+class BidiReactorBase : public grpc::ServerBidiReactor<Request, Response> {
   Request request;
   Response response;
 
   void finish(grpc::Status status = grpc::Status::OK);
 
 public:
-  ReactorBase();
+  BidiReactorBase();
 
   void OnDone() override;
   void OnReadDone(bool ok) override;
@@ -23,22 +23,24 @@ public:
 };
 
 template <class Request, class Response>
-void ReactorBase<Request, Response>::finish(grpc::Status status) {
+void BidiReactorBase<Request, Response>::finish(grpc::Status status)
+{
   this->Finish(status);
 }
 
 template <class Request, class Response>
-ReactorBase<Request, Response>::ReactorBase() {
+BidiReactorBase<Request, Response>::BidiReactorBase()
+{
   this->StartRead(&this->request);
 }
 
 template <class Request, class Response>
-void ReactorBase<Request, Response>::OnDone() {
+void BidiReactorBase<Request, Response>::OnDone() {
   delete this;
 }
 
 template <class Request, class Response>
-void ReactorBase<Request, Response>::OnReadDone(bool ok) {
+void BidiReactorBase<Request, Response>::OnReadDone(bool ok) {
   if (!ok) {
     this->finish(grpc::Status(grpc::StatusCode::INTERNAL, "reading error"));
     return;
@@ -56,7 +58,8 @@ void ReactorBase<Request, Response>::OnReadDone(bool ok) {
 }
 
 template <class Request, class Response>
-void ReactorBase<Request, Response>::OnWriteDone(bool ok) {
+void BidiReactorBase<Request, Response>::OnWriteDone(bool ok)
+{
   if (!ok) {
     std::cout << "Server write failed" << std::endl;
     return;

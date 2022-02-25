@@ -9,20 +9,24 @@
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
-#include "ReactorBase.h"
+#include "BidiReactorBase.h"
+#include "ReadReactorBase.h"
+#include "WriteReactorBase.h"
 
-class ExchangeReactor : public ReactorBase<example::DataRequest, example::DataResponse>
+class ExchangeBidiReactor : public BidiReactorBase<example::DataRequest, example::DataResponse>
 {
   std::vector<std::string> responses = {"res 4", "res 3", "res 2", "res 1"};
-  size_t i=0;
+  size_t i = 0;
+
 public:
   std::unique_ptr<grpc::Status> handleRequest(example::DataRequest request, example::DataResponse *response) override
   {
     std::cout << "received: " << request.data() << "/ gonna respond: " << this->responses.back() << std::endl;
-    if (this->responses.empty()) {
+    if (this->responses.empty())
+    {
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
-    if (i>1)
+    if (i > 1)
     {
       throw std::runtime_error("test error");
     }
@@ -33,13 +37,65 @@ public:
   }
 };
 
+class ExchangeReadReactor : public ReadReactorBase<example::DataRequest, example::DataResponse>
+{
+public:
+  using ReadReactorBase<example::DataRequest, example::DataResponse>::ReadReactorBase;
+
+  std::unique_ptr<grpc::Status> readRequest(example::DataRequest request) override
+  {
+    // this->response can be modified and it will be sent to the client in the end
+    std::cout << "received request [" << request.data() << "]" << std::endl;
+    if (request.data().empty())
+    {
+      this->response->set_data("thank you");
+      return std::make_unique<grpc::Status>(grpc::Status::OK);
+    }
+    return nullptr;
+  }
+};
+
+class ExchangeWriteReactor : public WriteReactorBase<example::DataRequest, example::DataResponse>
+{
+  size_t i = 0;
+public:
+  using WriteReactorBase<example::DataRequest, example::DataResponse>::WriteReactorBase;
+
+  std::unique_ptr<grpc::Status> writeResponse(example::DataResponse *response) override
+  {
+    // this->request can be accessed as read-only
+    std::cout << "preparing response with request [" << this->request.data() << "]" << std::endl;
+    if (this->i > 3) {
+      std::cout << "terminating stream" << std::endl;
+      return std::make_unique<grpc::Status>(grpc::Status::OK);
+    }
+    std::string responseStr = "response " + std::to_string(++this->i);
+    std::cout << "sending response: [" << responseStr << "]" << std::endl;
+    response->set_data(responseStr);
+    return nullptr;
+  }
+};
+
 class ExampleServiceImpl final : public example::ExampleService::CallbackService
 {
 public:
   grpc::ServerBidiReactor<example::DataRequest, example::DataResponse> *
   ExchangeData(grpc::CallbackServerContext *context) override
   {
-    return new ExchangeReactor();
+    return new ExchangeBidiReactor();
+  }
+
+  grpc::ServerReadReactor<example::DataRequest> *OneWayStreamClientToServer(
+      grpc::CallbackServerContext *context, example::DataResponse *response) override
+  {
+    return new ExchangeReadReactor(response);
+  }
+  grpc::ServerWriteReactor<example::DataResponse> *OneWayStreamServerToClient(
+      grpc::CallbackServerContext *context, const example::DataRequest *request) override
+  {
+    ExchangeWriteReactor * reactor = new ExchangeWriteReactor(request);
+    reactor->NextWrite();
+    return reactor;
   }
 };
 
