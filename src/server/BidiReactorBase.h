@@ -10,8 +10,6 @@ class BidiReactorBase : public grpc::ServerBidiReactor<Request, Response> {
   Request request;
   Response response;
 
-  void finish(grpc::Status status = grpc::Status::OK);
-
 public:
   BidiReactorBase();
 
@@ -21,12 +19,6 @@ public:
 
   virtual std::unique_ptr<grpc::Status> handleRequest(Request request, Response *response) = 0;
 };
-
-template <class Request, class Response>
-void BidiReactorBase<Request, Response>::finish(grpc::Status status)
-{
-  this->Finish(status);
-}
 
 template <class Request, class Response>
 BidiReactorBase<Request, Response>::BidiReactorBase()
@@ -42,18 +34,18 @@ void BidiReactorBase<Request, Response>::OnDone() {
 template <class Request, class Response>
 void BidiReactorBase<Request, Response>::OnReadDone(bool ok) {
   if (!ok) {
-    this->finish(grpc::Status(grpc::StatusCode::INTERNAL, "reading error"));
+    this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, "reading error"));
     return;
   }
   try {
     std::unique_ptr<grpc::Status> status = this->handleRequest(this->request, &this->response);
     if (status != nullptr) {
-      this->finish(*status);
+      this->Finish(*status);
       return;
     }
     this->StartWrite(&this->response);
   } catch (std::runtime_error &e) {
-    this->finish(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
+    this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
   }
 }
 
