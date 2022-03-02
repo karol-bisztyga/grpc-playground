@@ -6,31 +6,50 @@
 #include <memory>
 
 #include "BidiReactor.h"
+#include "ReadReactor.h"
 
 struct Client
 {
   std::unique_ptr<example::ExampleService::Stub> stub;
+  std::unique_ptr<BidiReactor> bidiReactor;
+  std::unique_ptr<ReadReactor> readReactor;
 
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
   {
   }
+
+  void initializeBidiReactor() {
+    this->bidiReactor.reset(new BidiReactor(stub.get()));
+  }
+
+  void initializeReadReactor(const std::string &data) {
+    example::DataRequest request;
+    request.set_data(data);
+    this->readReactor.reset(new ReadReactor(stub.get(), request));
+  }
 };
 
-void performBidi(const Client &client) {
-  std::unique_ptr<BidiReactor> reactor = std::make_unique<BidiReactor>(client.stub.get());
-  while (!reactor->isDone())
+void performBidi(Client &client) {
+  client.initializeBidiReactor();
+  while (!client.bidiReactor->isDone())
   {
     std::string str;
     std::cout << "enter a message: ";
     std::getline(std::cin, str);
-    reactor->NextWrite(str);
+    client.bidiReactor->NextWrite(str);
   }
 }
 
-void performWrite(const Client &client) {}
+void performWrite(Client &client) {
+}
 
-void performRead(const Client &client) {}
+void performRead(Client &client) {
+  std::string str;
+  std::cout << "enter a message: ";
+  std::getline(std::cin, str);
+  client.initializeReadReactor(str);
+}
 
 int main(int argc, char **argv)
 {
@@ -38,7 +57,7 @@ int main(int argc, char **argv)
 
   std::string opt = "?";
   std::string options = "brwe";
-  while(options.find(opt) == std::string::npos) {
+  while(options.find(opt[0]) == std::string::npos) {
     std::cout << "what you want to do?" << std::endl;
     std::cout << "[b] bidi stream" << std::endl;
     std::cout << "[w] write stream" << std::endl;
@@ -56,10 +75,12 @@ int main(int argc, char **argv)
     }
     case 'r':
     {
+      performRead(client);
       break;
     }
     case 'w':
     {
+      performWrite(client);
       break;
     }
     case 'e':
