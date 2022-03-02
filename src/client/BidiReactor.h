@@ -41,7 +41,7 @@ public:
 
   void OnWriteDone(bool ok) override
   {
-    std::cout << "Done writing: " << this->request.data() << std::endl;
+    // std::cout << "Done writing: " << this->request.data() << std::endl;
     StartRead(&this->response);
   }
 

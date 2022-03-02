@@ -39,6 +39,7 @@ public:
 
 class ExchangeReadReactor : public ReadReactorBase<example::DataRequest, example::DataResponse>
 {
+  size_t i = 0;
 public:
   using ReadReactorBase<example::DataRequest, example::DataResponse>::ReadReactorBase;
 
@@ -46,11 +47,18 @@ public:
   {
     // this->response can be modified and it will be sent to the client in the end
     std::cout << "received request [" << request.data() << "]" << std::endl;
+    if (i > 3)
+    {
+      throw std::runtime_error("error: too many data chunks");
+    }
     if (request.data().empty())
     {
-      this->response->set_data("thank you");
+      std::string resp = "thank you";
+      std::cout << "setting response: " << resp << std::endl;
+      this->response->set_data(resp);
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
+    ++i;
     return nullptr;
   }
 };
@@ -69,7 +77,7 @@ public:
       std::cout << "terminating stream" << std::endl;
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
-    std::string responseStr = "response " + std::to_string(++this->i);
+    std::string responseStr = "response " + std::to_string(++this->i) + "(" + this->request.data() + ")";
     std::cout << "sending response: [" << responseStr << "]" << std::endl;
     response->set_data(responseStr);
     return nullptr;

@@ -40,6 +40,7 @@ public:
     catch (std::runtime_error &e)
     {
       this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
+      return;
     }
     this->StartRead(&this->request);
   }

@@ -7,12 +7,14 @@
 
 #include "BidiReactor.h"
 #include "ReadReactor.h"
+#include "WriteReactor.h"
 
 struct Client
 {
   std::unique_ptr<example::ExampleService::Stub> stub;
   std::unique_ptr<BidiReactor> bidiReactor;
   std::unique_ptr<ReadReactor> readReactor;
+  std::unique_ptr<WriteReactor> writeReactor;
 
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
@@ -28,6 +30,10 @@ struct Client
     request.set_data(data);
     this->readReactor.reset(new ReadReactor(stub.get(), request));
   }
+
+  void initializeWriteReactor() {
+    this->writeReactor.reset(new WriteReactor(stub.get()));
+  }
 };
 
 void performBidi(Client &client) {
@@ -42,6 +48,15 @@ void performBidi(Client &client) {
 }
 
 void performWrite(Client &client) {
+  client.initializeWriteReactor();
+  while (!client.writeReactor->isDone())
+  {
+    std::string str;
+    std::cout << "enter a message: ";
+    std::getline(std::cin, str);
+    client.writeReactor->NextWrite(str);
+  }
+  std::cout << "done writing to server with response: [" << client.writeReactor->response.data() << "]" << std::endl;
 }
 
 void performRead(Client &client) {
