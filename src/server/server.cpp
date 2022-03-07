@@ -35,6 +35,11 @@ public:
     ++i;
     return nullptr;
   }
+
+  void doneCallback() override
+  {
+    std::cout << "done CLB" << std::endl;
+  }
 };
 
 class ExchangeReadReactor : public ReadReactorBase<example::DataRequest, example::DataResponse>
@@ -61,6 +66,11 @@ public:
     ++i;
     return nullptr;
   }
+
+  void doneCallback() override
+  {
+    std::cout << "done CLB" << std::endl;
+  }
 };
 
 class ExchangeWriteReactor : public WriteReactorBase<example::DataRequest, example::DataResponse>
@@ -82,6 +92,11 @@ public:
     response->set_data(responseStr);
     ++this->i;
     return nullptr;
+  }
+
+  void doneCallback() override
+  {
+    std::cout << "done CLB" << std::endl;
   }
 };
 

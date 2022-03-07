@@ -20,12 +20,6 @@ public:
 
   void NextWrite(std::string msg)
   {
-    if (this->initialized && this->response.data().empty())
-    {
-      std::cout << "empty message - terminating" << std::endl;
-      this->terminate(grpc::Status::OK);
-      return;
-    }
     this->request.set_data(msg);
     StartWrite(&this->request);
     if (!this->initialized)
@@ -39,7 +33,6 @@ public:
     if (this->done) {
       return;
     }
-    this->StartWritesDone();
     this->status = status;
     std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
     this->done = true;
@@ -51,7 +44,6 @@ public:
 
   void OnWriteDone(bool ok) override
   {
-    // std::cout << "Done writing: " << this->request.data() << std::endl;
     StartRead(&this->response);
   }
 
@@ -63,7 +55,7 @@ public:
         return;
       }
       std::cout << "error - terminating: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
-      this->StartWritesDone();
+      this->terminate(grpc::Status(grpc::StatusCode::UNKNOWN, "read error"));
       return;
     }
     std::cout << "Got message [" << this->response.data() << "]" << std::endl;

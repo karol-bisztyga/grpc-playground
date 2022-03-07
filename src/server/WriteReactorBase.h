@@ -20,6 +20,7 @@ public:
   void OnWriteDone(bool ok) override;
 
   virtual std::unique_ptr<grpc::Status> writeResponse(Response *response) = 0;
+  virtual void doneCallback(){};
 };
 
 template <class Request, class Response>
@@ -44,6 +45,7 @@ void WriteReactorBase<Request, Response>::NextWrite() {
 
 template <class Request, class Response>
 void WriteReactorBase<Request, Response>::OnDone() {
+  this->doneCallback();
   delete this;
 }
 

@@ -18,6 +18,7 @@ public:
   void OnReadDone(bool ok) override;
 
   virtual std::unique_ptr<grpc::Status> readRequest(Request request) = 0;
+  virtual void doneCallback(){};
 };
 
 template <class Request, class Response>
@@ -27,6 +28,7 @@ ReadReactorBase<Request, Response>::ReadReactorBase(Response *response) : respon
 
 template <class Request, class Response>
 void ReadReactorBase<Request, Response>::OnDone() {
+  this->doneCallback();
   delete this;
 }
 
