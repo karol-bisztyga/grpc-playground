@@ -26,10 +26,10 @@ public:
     {
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
-    if (i > 1)
-    {
-      throw std::runtime_error("test error");
-    }
+    // if (i > 1)
+    // {
+    //   throw std::runtime_error("test error");
+    // }
     response->set_data(this->responses.back() + "/" + std::to_string(i));
     this->responses.pop_back();
     ++i;
@@ -77,9 +77,10 @@ public:
       std::cout << "terminating stream" << std::endl;
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
-    std::string responseStr = "response " + std::to_string(++this->i) + "(" + this->request.data() + ")";
+    std::string responseStr = "response " + std::to_string(this->i) + "(" + this->request.data() + ")";
     std::cout << "sending response: [" << responseStr << "]" << std::endl;
     response->set_data(responseStr);
+    ++this->i;
     return nullptr;
   }
 };

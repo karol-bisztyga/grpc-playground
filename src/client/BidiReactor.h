@@ -23,7 +23,7 @@ public:
     if (this->initialized && this->response.data().empty())
     {
       std::cout << "empty message - terminating" << std::endl;
-      this->StartWritesDone();
+      this->terminate(grpc::Status::OK);
       return;
     }
     this->request.set_data(msg);
@@ -33,6 +33,16 @@ public:
       StartCall();
       this->initialized = true;
     }
+  }
+
+  void terminate(const grpc::Status &status) {
+    if (this->done) {
+      return;
+    }
+    this->StartWritesDone();
+    this->status = status;
+    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
+    this->done = true;
   }
 
   bool isDone() {
@@ -49,7 +59,10 @@ public:
   {
     if (!ok)
     {
-      std::cout << "error - terminating: " << "/" << this->status.error_message() << std::endl;
+      if (this->done) {
+        return;
+      }
+      std::cout << "error - terminating: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
       this->StartWritesDone();
       return;
     }
@@ -58,8 +71,6 @@ public:
 
   void OnDone(const grpc::Status &status) override
   {
-    this->status = status;
-    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
-    this->done = true;
+    this->terminate(status);
   }
 };

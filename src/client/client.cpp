@@ -4,6 +4,7 @@
 #include "../_generated/example.grpc.pb.h"
 
 #include <memory>
+#include <functional>
 
 #include "BidiReactor.h"
 #include "ReadReactor.h"
@@ -16,6 +17,8 @@ struct Client
   std::unique_ptr<ReadReactor> readReactor;
   std::unique_ptr<WriteReactor> writeReactor;
 
+  size_t readCount = 0;
+
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
   {
@@ -25,10 +28,11 @@ struct Client
     this->bidiReactor.reset(new BidiReactor(stub.get()));
   }
 
-  void initializeReadReactor(const std::string &data) {
+  void initializeReadReactor(const std::string &data, std::function<bool(const example::DataResponse &)> clb)
+  {
     example::DataRequest request;
     request.set_data(data);
-    this->readReactor.reset(new ReadReactor(stub.get(), request));
+    this->readReactor.reset(new ReadReactor(stub.get(), request, clb));
   }
 
   void initializeWriteReactor() {
@@ -41,8 +45,11 @@ void performBidi(Client &client) {
   while (!client.bidiReactor->isDone())
   {
     std::string str;
-    std::cout << "enter a message: ";
+    std::cout << "enter a message(type 'exit' to end the connection): ";
     std::getline(std::cin, str);
+    if (str == "exit") {
+      client.bidiReactor->terminate(grpc::Status::OK);
+    }
     client.bidiReactor->NextWrite(str);
   }
 }
@@ -52,8 +59,11 @@ void performWrite(Client &client) {
   while (!client.writeReactor->isDone())
   {
     std::string str;
-    std::cout << "enter a message: ";
+    std::cout << "enter a message(type 'exit' to end the connection): ";
     std::getline(std::cin, str);
+    if (str == "exit") {
+      client.writeReactor->terminate(grpc::Status::OK);
+    }
     client.writeReactor->NextWrite(str);
   }
   std::cout << "done writing to server with response: [" << client.writeReactor->response.data() << "]" << std::endl;
@@ -61,9 +71,16 @@ void performWrite(Client &client) {
 
 void performRead(Client &client) {
   std::string str;
-  std::cout << "enter a message: ";
+  std::cout << "enter a message(type 'exit' to cut the connection prematurely): ";
   std::getline(std::cin, str);
-  client.initializeReadReactor(str);
+  std::function<bool(const example::DataResponse&)> clb = nullptr;
+  if (str == "exit") {
+    clb = [&client](const example::DataResponse &response) {
+      std::cout << "CLB: " << client.readCount << std::endl;
+      return ++client.readCount > 2;
+    };
+  }
+  client.initializeReadReactor(str, clb);
 }
 
 int main(int argc, char **argv)

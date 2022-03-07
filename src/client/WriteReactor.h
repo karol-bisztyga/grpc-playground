@@ -29,6 +29,16 @@ public:
     }
   }
 
+  void terminate(const grpc::Status &status)
+  {
+    if (this->done) {
+      return;
+    }
+    this->status = status;
+    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
+    this->done = true;
+  }
+
   bool isDone()
   {
     return this->done;
@@ -36,8 +46,6 @@ public:
 
   void OnDone(const grpc::Status &status) override
   {
-    this->status = status;
-    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
-    this->done = true;
+    this->terminate(status);
   }
 };
