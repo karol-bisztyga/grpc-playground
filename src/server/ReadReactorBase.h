@@ -18,11 +18,14 @@ public:
   void OnReadDone(bool ok) override;
 
   virtual std::unique_ptr<grpc::Status> readRequest(Request request) = 0;
+  virtual void initialize(){};
   virtual void doneCallback(){};
 };
 
 template <class Request, class Response>
-ReadReactorBase<Request, Response>::ReadReactorBase(Response *response) : response(response) {
+ReadReactorBase<Request, Response>::ReadReactorBase(Response *response) : response(response)
+{
+  this->initialize();
   this->StartRead(&this->request);
 }
 

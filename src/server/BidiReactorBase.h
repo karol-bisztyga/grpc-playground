@@ -18,12 +18,14 @@ public:
   void OnWriteDone(bool ok) override;
 
   virtual std::unique_ptr<grpc::Status> handleRequest(Request request, Response *response) = 0;
+  virtual void initialize(){};
   virtual void doneCallback(){};
 };
 
 template <class Request, class Response>
 BidiReactorBase<Request, Response>::BidiReactorBase()
 {
+  this->initialize();
   this->StartRead(&this->request);
 }
 

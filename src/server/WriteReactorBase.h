@@ -20,11 +20,14 @@ public:
   void OnWriteDone(bool ok) override;
 
   virtual std::unique_ptr<grpc::Status> writeResponse(Response *response) = 0;
+  virtual void initialize(){};
   virtual void doneCallback(){};
 };
 
 template <class Request, class Response>
-WriteReactorBase<Request, Response>::WriteReactorBase(const Request *request) : request(*request) {
+WriteReactorBase<Request, Response>::WriteReactorBase(const Request *request) : request(*request)
+{
+  this->initialize();
   // we cannot call this->NextWrite() here because it's going to call it on
   // the base class, not derived leading to the runtime error of calling
   // a pure virtual function
