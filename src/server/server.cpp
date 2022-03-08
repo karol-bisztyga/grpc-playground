@@ -9,11 +9,11 @@
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
-#include "BidiReactorBase.h"
-#include "ReadReactorBase.h"
-#include "WriteReactorBase.h"
+#include "ServerBidiReactorBase.h"
+#include "ServerReadReactorBase.h"
+#include "ServerWriteReactorBase.h"
 
-class ExchangeBidiReactor : public BidiReactorBase<example::DataRequest, example::DataResponse>
+class ExchangeBidiReactor : public ServerBidiReactorBase<example::DataRequest, example::DataResponse>
 {
   std::vector<std::string> responses = {"res 4", "res 3", "res 2", "res 1"};
   size_t i = 0;
@@ -42,11 +42,11 @@ public:
   }
 };
 
-class ExchangeReadReactor : public ReadReactorBase<example::DataRequest, example::DataResponse>
+class ExchangeReadReactor : public ServerReadReactorBase<example::DataRequest, example::DataResponse>
 {
   size_t i = 0;
 public:
-  using ReadReactorBase<example::DataRequest, example::DataResponse>::ReadReactorBase;
+  using ServerReadReactorBase<example::DataRequest, example::DataResponse>::ServerReadReactorBase;
 
   std::unique_ptr<grpc::Status> readRequest(example::DataRequest request) override
   {
@@ -73,11 +73,11 @@ public:
   }
 };
 
-class ExchangeWriteReactor : public WriteReactorBase<example::DataRequest, example::DataResponse>
+class ExchangeWriteReactor : public ServerWriteReactorBase<example::DataRequest, example::DataResponse>
 {
   size_t i = 0;
 public:
-  using WriteReactorBase<example::DataRequest, example::DataResponse>::WriteReactorBase;
+  using ServerWriteReactorBase<example::DataRequest, example::DataResponse>::ServerWriteReactorBase;
 
   std::unique_ptr<grpc::Status> writeResponse(example::DataResponse *response) override
   {

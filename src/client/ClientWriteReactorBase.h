@@ -3,7 +3,7 @@
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
-class WriteReactor : public grpc::ClientWriteReactor<example::DataRequest>
+class ClientWriteReactorBase : public grpc::ClientWriteReactor<example::DataRequest>
 {
   grpc::ClientContext context;
   example::DataRequest request;
@@ -13,7 +13,7 @@ class WriteReactor : public grpc::ClientWriteReactor<example::DataRequest>
 
 public:
   example::DataResponse response;
-  WriteReactor(example::ExampleService::Stub *stub)
+  ClientWriteReactorBase(example::ExampleService::Stub *stub)
   {
     stub->async()->OneWayStreamClientToServer(&this->context, &this->response, this);
   }

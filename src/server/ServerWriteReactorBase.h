@@ -6,14 +6,14 @@
 #include <memory>
 
 template <class Request, class Response>
-class WriteReactorBase : public grpc::ServerWriteReactor<Response>
+class ServerWriteReactorBase : public grpc::ServerWriteReactor<Response>
 {
   Response response;
 protected:
   // this is a const ref since it's not meant to be modified
   const Request &request;
 public:
-  WriteReactorBase(const Request *request);
+  ServerWriteReactorBase(const Request *request);
 
   virtual void NextWrite();
   void OnDone() override;
@@ -25,7 +25,7 @@ public:
 };
 
 template <class Request, class Response>
-WriteReactorBase<Request, Response>::WriteReactorBase(const Request *request) : request(*request)
+ServerWriteReactorBase<Request, Response>::ServerWriteReactorBase(const Request *request) : request(*request)
 {
   this->initialize();
   // we cannot call this->NextWrite() here because it's going to call it on
@@ -36,7 +36,7 @@ WriteReactorBase<Request, Response>::WriteReactorBase(const Request *request) : 
 }
 
 template <class Request, class Response>
-void WriteReactorBase<Request, Response>::NextWrite() {
+void ServerWriteReactorBase<Request, Response>::NextWrite() {
   std::unique_ptr<grpc::Status> status = this->writeResponse(&this->response);
   if (status != nullptr)
   {
@@ -47,13 +47,13 @@ void WriteReactorBase<Request, Response>::NextWrite() {
 }
 
 template <class Request, class Response>
-void WriteReactorBase<Request, Response>::OnDone() {
+void ServerWriteReactorBase<Request, Response>::OnDone() {
   this->doneCallback();
   delete this;
 }
 
 template <class Request, class Response>
-void WriteReactorBase<Request, Response>::OnWriteDone(bool ok) {
+void ServerWriteReactorBase<Request, Response>::OnWriteDone(bool ok) {
   if (!ok) {
     this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, "writing error"));
     return;

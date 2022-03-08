@@ -6,12 +6,13 @@
 #include <memory>
 
 template <class Request, class Response>
-class BidiReactorBase : public grpc::ServerBidiReactor<Request, Response> {
+class ServerBidiReactorBase : public grpc::ServerBidiReactor<Request, Response>
+{
   Request request;
   Response response;
 
 public:
-  BidiReactorBase();
+  ServerBidiReactorBase();
 
   void OnDone() override;
   void OnReadDone(bool ok) override;
@@ -23,20 +24,20 @@ public:
 };
 
 template <class Request, class Response>
-BidiReactorBase<Request, Response>::BidiReactorBase()
+ServerBidiReactorBase<Request, Response>::ServerBidiReactorBase()
 {
   this->initialize();
   this->StartRead(&this->request);
 }
 
 template <class Request, class Response>
-void BidiReactorBase<Request, Response>::OnDone() {
+void ServerBidiReactorBase<Request, Response>::OnDone() {
   this->doneCallback();
   delete this;
 }
 
 template <class Request, class Response>
-void BidiReactorBase<Request, Response>::OnReadDone(bool ok) {
+void ServerBidiReactorBase<Request, Response>::OnReadDone(bool ok) {
   if (!ok) {
     this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, "reading error"));
     return;
@@ -54,7 +55,7 @@ void BidiReactorBase<Request, Response>::OnReadDone(bool ok) {
 }
 
 template <class Request, class Response>
-void BidiReactorBase<Request, Response>::OnWriteDone(bool ok)
+void ServerBidiReactorBase<Request, Response>::OnWriteDone(bool ok)
 {
   if (!ok) {
     std::cout << "Server write failed" << std::endl;

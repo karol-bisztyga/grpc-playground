@@ -3,28 +3,28 @@
 #include "../_generated/example.pb.h"
 #include "../_generated/example.grpc.pb.h"
 
-class BidiReactor : public grpc::ClientBidiReactor<example::DataRequest, example::DataResponse>
+template <class Request, class Response>
+class ClientBidiReactorBase : public grpc::ClientBidiReactor<Request, Response>
 {
-  grpc::ClientContext context;
-  example::DataRequest request;
-  example::DataResponse response;
+  Request request;
+  std::shared_ptr<Response> response = nullptr;
   grpc::Status status;
   bool done = false;
   bool initialized = 0;
 
 public:
-  BidiReactor(example::ExampleService::Stub *stub)
+  grpc::ClientContext context;
+  void nextWrite()
   {
-    stub->async()->ExchangeData(&this->context, this);
-  }
-
-  void NextWrite(std::string msg)
-  {
-    this->request.set_data(msg);
-    StartWrite(&this->request);
+    std::unique_ptr<grpc::Status> status = this->prepareRequest(this->request, this->response);
+    if (status != nullptr) {
+      this->terminate(*status);
+      return;
+    }
+    this->StartWrite(&this->request);
     if (!this->initialized)
     {
-      StartCall();
+      this->StartCall();
       this->initialized = true;
     }
   }
@@ -33,6 +33,7 @@ public:
     if (this->done) {
       return;
     }
+    this->StartWritesDone();
     this->status = status;
     std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
     this->done = true;
@@ -44,7 +45,10 @@ public:
 
   void OnWriteDone(bool ok) override
   {
-    StartRead(&this->response);
+    if (this->response == nullptr) {
+      this->response = std::make_shared<Response>();
+    }
+    this->StartRead(&(*this->response));
   }
 
   void OnReadDone(bool ok) override
@@ -54,15 +58,16 @@ public:
       if (this->done) {
         return;
       }
-      std::cout << "error - terminating: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
       this->terminate(grpc::Status(grpc::StatusCode::UNKNOWN, "read error"));
       return;
     }
-    std::cout << "Got message [" << this->response.data() << "]" << std::endl;
+    this->nextWrite();
   }
 
   void OnDone(const grpc::Status &status) override
   {
     this->terminate(status);
   }
+
+  virtual std::unique_ptr<grpc::Status> prepareRequest(Request & request, std::shared_ptr<Response> previousResponse) = 0;
 };

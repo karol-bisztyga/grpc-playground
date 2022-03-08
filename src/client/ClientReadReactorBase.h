@@ -5,7 +5,7 @@
 
 #include <functional>
 
-class ReadReactor : public grpc::ClientReadReactor<example::DataResponse>
+class ClientReadReactorBase : public grpc::ClientReadReactor<example::DataResponse>
 {
   grpc::ClientContext context;
   example::DataResponse response;
@@ -25,7 +25,7 @@ class ReadReactor : public grpc::ClientReadReactor<example::DataResponse>
   }
 
 public:
-  ReadReactor(example::ExampleService::Stub *stub, const example::DataRequest &request, std::function<bool(const example::DataResponse &)> shouldConnectionTerminate = nullptr) : shouldConnectionTerminate(shouldConnectionTerminate)
+  ClientReadReactorBase(example::ExampleService::Stub *stub, const example::DataRequest &request, std::function<bool(const example::DataResponse &)> shouldConnectionTerminate = nullptr) : shouldConnectionTerminate(shouldConnectionTerminate)
   {
     stub->async()->OneWayStreamServerToClient(&this->context, &request, this);
     this->StartRead(&this->response);
