@@ -35,18 +35,34 @@ public:
   }
 };
 
+class ClientReadReactor : public ClientReadReactorBase<example::DataRequest, example::DataResponse>
+{
+  size_t readCount = 0;
+  const size_t limit = 0;
+public:
+  ClientReadReactor(size_t limit = 0) : limit(limit) {}
+
+  std::unique_ptr<grpc::Status> readResponse(const example::DataResponse &response) override {
+    std::cout << "CLB: " << response.data() << std::endl;
+    ++this->readCount;
+    if (this->limit && this->readCount > this->limit) {
+      return std::make_unique<grpc::Status>(grpc::Status::OK);
+    }
+    return nullptr;
+  }
+};
+
 struct Client
 {
   std::unique_ptr<example::ExampleService::Stub> stub;
 
-  size_t readCount = 0;
+  std::unique_ptr<ClientBidiReactor> bidiReactor;
+  std::unique_ptr<ClientReadReactor> readReactor;
 
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
   {
   }
-
-  std::unique_ptr<ClientBidiReactor> bidiReactor;
 
   void initializeBidiReactor()
   {
@@ -55,19 +71,19 @@ struct Client
 
   bool reactorInProgress()
   {
-    if (this->bidiReactor != nullptr && !this->bidiReactor->isDone())
-    {
+    if (this->bidiReactor != nullptr && !this->bidiReactor->isDone()) {
+      return true;
+    }
+    if (this->readReactor != nullptr && !this->readReactor->isDone()) {
       return true;
     }
     return false;
   }
 
-  // void initializeReadReactor(const std::string &data, std::function<bool(const example::DataResponse &)> clb)
-  // {
-  //   example::DataRequest request;
-  //   request.set_data(data);
-  //   this->readReactor.reset(new ReadReactor(stub.get(), request, clb));
-  // }
+  void initializeReadReactor(size_t limit)
+  {
+    this->readReactor.reset(new ClientReadReactor(limit));
+  }
 
   // void initializeWriteReactor() {
   //   this->writeReactor.reset(new WriteReactor(stub.get()));
@@ -78,10 +94,7 @@ void performBidi(Client &client)
 {
   client.initializeBidiReactor();
   client.stub->async()->ExchangeData(&client.bidiReactor->context, &(*client.bidiReactor));
-  // while (!client.bidiReactor->isDone())
-  // {
   client.bidiReactor->nextWrite();
-  // }
 }
 
 void performWrite(Client &client)
@@ -102,17 +115,17 @@ void performWrite(Client &client)
 
 void performRead(Client &client)
 {
-  // std::string str;
-  // std::cout << "enter a message(type 'exit' to cut the connection prematurely): ";
-  // std::getline(std::cin, str);
-  // std::function<bool(const example::DataResponse&)> clb = nullptr;
-  // if (str == "exit") {
-  //   clb = [&client](const example::DataResponse &response) {
-  //     std::cout << "CLB: " << client.readCount << std::endl;
-  //     return ++client.readCount > 2;
-  //   };
-  // }
-  // client.initializeReadReactor(str, clb);
+  std::string str;
+  std::cout << "enter a message(type 'exit' to cut the connection prematurely): ";
+  std::getline(std::cin, str);
+  size_t limit = 0;
+  if (str == "exit") {
+    limit = 2;
+  }
+  client.initializeReadReactor(limit);
+  client.readReactor->request.set_data(str);
+  client.stub->async()->OneWayStreamServerToClient(&client.readReactor->context, &client.readReactor->request, &(*client.readReactor));
+  client.readReactor->start();
 }
 
 int main(int argc, char **argv)

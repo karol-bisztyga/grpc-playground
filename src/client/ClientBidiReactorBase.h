@@ -1,8 +1,5 @@
 #include <grpcpp/grpcpp.h>
 
-#include "../_generated/example.pb.h"
-#include "../_generated/example.grpc.pb.h"
-
 template <class Request, class Response>
 class ClientBidiReactorBase : public grpc::ClientBidiReactor<Request, Response>
 {
@@ -14,6 +11,7 @@ class ClientBidiReactorBase : public grpc::ClientBidiReactor<Request, Response>
 
 public:
   grpc::ClientContext context;
+  
   void nextWrite()
   {
     std::unique_ptr<grpc::Status> status = this->prepareRequest(this->request, this->response);

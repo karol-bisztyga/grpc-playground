@@ -1,18 +1,13 @@
 #include <grpcpp/grpcpp.h>
 
-#include "../_generated/example.pb.h"
-#include "../_generated/example.grpc.pb.h"
-
 #include <functional>
 
-class ClientReadReactorBase : public grpc::ClientReadReactor<example::DataResponse>
+template <class Request, class Response>
+class ClientReadReactorBase : public grpc::ClientReadReactor<Response>
 {
-  grpc::ClientContext context;
-  example::DataResponse response;
+  Response response;
   grpc::Status status;
   bool done = false;
-  size_t counter = 0;
-  std::function<bool(const example::DataResponse&)> shouldConnectionTerminate = nullptr;
 
   void terminate(const grpc::Status &status)
   {
@@ -25,9 +20,10 @@ class ClientReadReactorBase : public grpc::ClientReadReactor<example::DataRespon
   }
 
 public:
-  ClientReadReactorBase(example::ExampleService::Stub *stub, const example::DataRequest &request, std::function<bool(const example::DataResponse &)> shouldConnectionTerminate = nullptr) : shouldConnectionTerminate(shouldConnectionTerminate)
-  {
-    stub->async()->OneWayStreamServerToClient(&this->context, &request, this);
+  Request request;
+  grpc::ClientContext context;
+
+  void start() {
     this->StartRead(&this->response);
     this->StartCall();
   }
@@ -36,14 +32,12 @@ public:
   {
     if (!ok)
     {
-      std::cout << "terminating" << std::endl;
       this->terminate(grpc::Status(grpc::StatusCode::UNKNOWN, "read error"));
       return;
     }
-    std::cout << "Got message [" << this->response.data() << "]" << std::endl;
-    if (this->shouldConnectionTerminate != nullptr && this->shouldConnectionTerminate(this->response))
-    {
-      this->terminate(grpc::Status::OK);
+    std::unique_ptr<grpc::Status> status = this->readResponse(this->response);
+    if (status != nullptr) {
+      this->terminate(*status);
       return;
     }
     this->StartRead(&this->response);
@@ -57,4 +51,6 @@ public:
   bool isDone() {
     return this->done;
   }
+
+  virtual std::unique_ptr<grpc::Status> readResponse(const Response &response) = 0;
 };

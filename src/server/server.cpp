@@ -83,7 +83,7 @@ public:
   {
     // this->request can be accessed as read-only
     std::cout << "preparing response with request [" << this->request.data() << "]" << std::endl;
-    if (this->i > 3) {
+    if (this->i > 5) {
       std::cout << "terminating stream" << std::endl;
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
