@@ -109,11 +109,21 @@ public:
   {
     return new ExchangeReadReactor(response);
   }
+
   grpc::ServerWriteReactor<example::DataResponse> *OneWayStreamServerToClient(
       grpc::CallbackServerContext *context, const example::DataRequest *request) override
   {
     ExchangeWriteReactor * reactor = new ExchangeWriteReactor(request);
     reactor->NextWrite();
+    return reactor;
+  }
+
+  grpc::ServerUnaryReactor *Unary(grpc::CallbackServerContext *context, const example::DataRequest *request, example::DataResponse *response) override {
+    std::cout << "unary for request [" << request->data() << "]" << std::endl;
+    response->set_data("response #1 for request ["+ request->data() +"]");
+    auto *reactor = context->DefaultReactor();
+    reactor->Finish(grpc::Status(grpc::StatusCode::INTERNAL, "test error"));
+    // reactor->Finish(grpc::Status::OK);
     return reactor;
   }
 };

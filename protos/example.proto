@@ -6,6 +6,7 @@ service ExampleService {
   rpc ExchangeData(stream DataRequest) returns(stream DataResponse) {}
   rpc OneWayStreamClientToServer(stream DataRequest) returns(DataResponse) {}
   rpc OneWayStreamServerToClient(DataRequest) returns(stream DataResponse) {}
+  rpc Unary(DataRequest) returns(DataResponse) {}
 }
 
 message DataRequest {

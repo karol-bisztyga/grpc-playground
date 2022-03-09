@@ -24,7 +24,7 @@ public:
       std::cout << "got response: [" << previousResponse->data() << "]" << std::endl;
     }
     std::string str;
-    std::cout << "enter a message(type 'exit' to end the connection): " << std::endl;
+    std::cout << "enter a message(type 'exit' to end the connection): ";
     std::getline(std::cin, str);
     if (str == "exit")
     {
@@ -39,13 +39,16 @@ class ClientReadReactor : public ClientReadReactorBase<example::DataRequest, exa
 {
   size_t readCount = 0;
   const size_t limit = 0;
+
 public:
   ClientReadReactor(size_t limit = 0) : limit(limit) {}
 
-  std::unique_ptr<grpc::Status> readResponse(const example::DataResponse &response) override {
+  std::unique_ptr<grpc::Status> readResponse(const example::DataResponse &response) override
+  {
     std::cout << "CLB: " << response.data() << std::endl;
     ++this->readCount;
-    if (this->limit && this->readCount > this->limit) {
+    if (this->limit && this->readCount > this->limit)
+    {
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
     return nullptr;
@@ -60,7 +63,8 @@ public:
     std::string str;
     std::cout << "enter a message(type 'exit' to end the connection on the client(no response), provide an empty message to end the connection on the server): ";
     std::getline(std::cin, str);
-    if (str == "exit") {
+    if (str == "exit")
+    {
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
     request.set_data(str);
@@ -73,6 +77,15 @@ public:
   }
 };
 
+class UnaryClientReactor : public grpc::ClientUnaryReactor
+{
+public:
+  grpc::ClientContext context;
+  example::DataRequest request;
+  example::DataResponse response;
+  bool done = false;
+};
+
 struct Client
 {
   std::unique_ptr<example::ExampleService::Stub> stub;
@@ -80,6 +93,7 @@ struct Client
   std::unique_ptr<ClientBidiReactor> bidiReactor;
   std::unique_ptr<ClientReadReactor> readReactor;
   std::unique_ptr<ClientWriteReactor> writeReactor;
+  std::unique_ptr<UnaryClientReactor> unaryReactor;
 
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
@@ -96,19 +110,32 @@ struct Client
     this->readReactor.reset(new ClientReadReactor(limit));
   }
 
-  void initializeWriteReactor() {
+  void initializeWriteReactor()
+  {
     this->writeReactor.reset(new ClientWriteReactor());
+  }
+
+  void initializeUnaryReactor()
+  {
+    this->unaryReactor.reset(new UnaryClientReactor());
   }
 
   bool reactorInProgress()
   {
-    if (this->bidiReactor != nullptr && !this->bidiReactor->isDone()) {
+    if (this->bidiReactor != nullptr && !this->bidiReactor->isDone())
+    {
       return true;
     }
-    if (this->readReactor != nullptr && !this->readReactor->isDone()) {
+    if (this->readReactor != nullptr && !this->readReactor->isDone())
+    {
       return true;
     }
-    if (this->writeReactor != nullptr && !this->writeReactor->isDone()) {
+    if (this->writeReactor != nullptr && !this->writeReactor->isDone())
+    {
+      return true;
+    }
+    if (this->unaryReactor != nullptr && !this->unaryReactor->done)
+    {
       return true;
     }
     return false;
@@ -135,7 +162,8 @@ void performRead(Client &client)
   std::cout << "enter a message(type 'exit' to cut the connection prematurely): ";
   std::getline(std::cin, str);
   size_t limit = 0;
-  if (str == "exit") {
+  if (str == "exit")
+  {
     limit = 2;
   }
   client.initializeReadReactor(limit);
@@ -144,12 +172,29 @@ void performRead(Client &client)
   client.readReactor->start();
 }
 
+void performUnary(Client &client)
+{
+  std::cout << "enter a message: ";
+  std::string str;
+  std::getline(std::cin, str);
+  client.initializeUnaryReactor();
+  client.unaryReactor->request.set_data(str);
+  client.stub->async()->Unary(&client.unaryReactor->context, &client.unaryReactor->request, &client.unaryReactor->response, [&client](grpc::Status status)
+                              {
+                                client.unaryReactor->done = true;
+                                if (!status.ok()) {
+                                  std::cout << "unary error: " + status.error_message() << std::endl;
+                                  return;
+                                }
+                                std::cout << "unary response: " << client.unaryReactor->response.data() << std::endl; });
+}
+
 int main(int argc, char **argv)
 {
   Client client(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
   std::string opt = "?";
-  std::string options = "brwe";
+  std::string options = "brwoe";
   while (options.find(opt[0]) == std::string::npos)
   {
     if (client.reactorInProgress())
@@ -161,6 +206,7 @@ int main(int argc, char **argv)
     std::cout << "[b] bidi stream" << std::endl;
     std::cout << "[w] write stream" << std::endl;
     std::cout << "[r] read stream" << std::endl;
+    std::cout << "[o] one message" << std::endl;
     std::cout << "[e] exit" << std::endl;
 
     std::getline(std::cin, opt);
@@ -180,6 +226,11 @@ int main(int argc, char **argv)
     case 'w':
     {
       performWrite(client);
+      break;
+    }
+    case 'o':
+    {
+      performUnary(client);
       break;
     }
     case 'e':
