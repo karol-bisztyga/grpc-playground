@@ -47,6 +47,7 @@ file(GLOB SOURCE_CODE "./src/*.cpp")
 
 include_directories(
   ./src
+  ./src/reactors
   ./cmake/build/_generated
 )
 
