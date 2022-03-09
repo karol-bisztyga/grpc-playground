@@ -52,12 +52,34 @@ public:
   }
 };
 
+class ClientWriteReactor : public ClientWriteReactorBase<example::DataRequest, example::DataResponse>
+{
+public:
+  std::unique_ptr<grpc::Status> prepareRequest(example::DataRequest &request) override
+  {
+    std::string str;
+    std::cout << "enter a message(type 'exit' to end the connection on the client(no response), provide an empty message to end the connection on the server): ";
+    std::getline(std::cin, str);
+    if (str == "exit") {
+      return std::make_unique<grpc::Status>(grpc::Status::OK);
+    }
+    request.set_data(str);
+    return nullptr;
+  };
+
+  void doneCallback() override
+  {
+    std::cout << "done writing to server with response: [" << this->response.data() << "]" << std::endl;
+  }
+};
+
 struct Client
 {
   std::unique_ptr<example::ExampleService::Stub> stub;
 
   std::unique_ptr<ClientBidiReactor> bidiReactor;
   std::unique_ptr<ClientReadReactor> readReactor;
+  std::unique_ptr<ClientWriteReactor> writeReactor;
 
   Client(std::shared_ptr<grpc::Channel> channel)
       : stub(example::ExampleService::NewStub(channel))
@@ -69,6 +91,15 @@ struct Client
     this->bidiReactor.reset(new ClientBidiReactor());
   }
 
+  void initializeReadReactor(size_t limit)
+  {
+    this->readReactor.reset(new ClientReadReactor(limit));
+  }
+
+  void initializeWriteReactor() {
+    this->writeReactor.reset(new ClientWriteReactor());
+  }
+
   bool reactorInProgress()
   {
     if (this->bidiReactor != nullptr && !this->bidiReactor->isDone()) {
@@ -77,17 +108,11 @@ struct Client
     if (this->readReactor != nullptr && !this->readReactor->isDone()) {
       return true;
     }
+    if (this->writeReactor != nullptr && !this->writeReactor->isDone()) {
+      return true;
+    }
     return false;
   }
-
-  void initializeReadReactor(size_t limit)
-  {
-    this->readReactor.reset(new ClientReadReactor(limit));
-  }
-
-  // void initializeWriteReactor() {
-  //   this->writeReactor.reset(new WriteReactor(stub.get()));
-  // }
 };
 
 void performBidi(Client &client)
@@ -99,18 +124,9 @@ void performBidi(Client &client)
 
 void performWrite(Client &client)
 {
-  // client.initializeWriteReactor();
-  // while (!client.writeReactor->isDone())
-  // {
-  //   std::string str;
-  //   std::cout << "enter a message(type 'exit' to end the connection): ";
-  //   std::getline(std::cin, str);
-  //   if (str == "exit") {
-  //     client.writeReactor->terminate(grpc::Status::OK);
-  //   }
-  //   client.writeReactor->NextWrite(str);
-  // }
-  // std::cout << "done writing to server with response: [" << client.writeReactor->response.data() << "]" << std::endl;
+  client.initializeWriteReactor();
+  client.stub->async()->OneWayStreamClientToServer(&client.writeReactor->context, &client.writeReactor->response, &(*client.writeReactor));
+  client.writeReactor->nextWrite();
 }
 
 void performRead(Client &client)

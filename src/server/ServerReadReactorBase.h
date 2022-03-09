@@ -17,6 +17,8 @@ public:
   void OnDone() override;
   void OnReadDone(bool ok) override;
 
+  void terminate(grpc::Status status);
+
   virtual std::unique_ptr<grpc::Status> readRequest(Request request) = 0;
   virtual void initialize(){};
   virtual void doneCallback(){};
@@ -31,26 +33,31 @@ ServerReadReactorBase<Request, Response>::ServerReadReactorBase(Response *respon
 
 template <class Request, class Response>
 void ServerReadReactorBase<Request, Response>::OnDone() {
-  this->doneCallback();
   delete this;
 }
 
 template <class Request, class Response>
 void ServerReadReactorBase<Request, Response>::OnReadDone(bool ok) {
   if (!ok) {
-    this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, "reading error"));
+    this->terminate(grpc::Status(grpc::StatusCode::INTERNAL, "reading error"));
     return;
   }
   try {
     std::unique_ptr<grpc::Status> status = this->readRequest(this->request);
     if (status != nullptr) {
-      this->Finish(*status);
+      this->terminate(*status);
       return;
     }
   }
   catch (std::runtime_error &e) {
-    this->Finish(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
+    this->terminate(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
     return;
   }
   this->StartRead(&this->request);
+}
+
+template <class Request, class Response>
+void ServerReadReactorBase<Request, Response>::terminate(grpc::Status status) {
+  this->doneCallback();
+  this->Finish(status);
 }

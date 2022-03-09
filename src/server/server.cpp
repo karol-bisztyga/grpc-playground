@@ -66,11 +66,6 @@ public:
     ++i;
     return nullptr;
   }
-
-  void doneCallback() override
-  {
-    std::cout << "done CLB" << std::endl;
-  }
 };
 
 class ExchangeWriteReactor : public ServerWriteReactorBase<example::DataRequest, example::DataResponse>
