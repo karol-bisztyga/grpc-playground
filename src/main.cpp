@@ -52,10 +52,7 @@ void put(Client &client, size_t dataSize = 0, char forcedFirstChar = 0)
     hashStream << std::hex << std::setfill('0') << std::setw(2) << std::nouppercase
                << (int)hash[i];
   }
-  if (client.put(reverseIndex, hashStream.str(), data))
-  {
-    client.persist.insert(std::pair<std::string, std::string>(reverseIndex, hashStream.str()));
-  }
+  client.put(reverseIndex, hashStream.str(), data);
 }
 
 enum class Mode
@@ -69,7 +66,7 @@ int main(int argc, char **argv)
   std::string targetStr;
   std::unique_ptr<Client> client;
 
-  Mode mode = Mode::LB;
+  Mode mode = Mode::LOCALHOST;
   switch(mode)
   {
   case Mode::LOCALHOST:
