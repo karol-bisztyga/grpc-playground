@@ -20,6 +20,7 @@ class ClientReadReactorBase : public grpc::ClientReadReactor<Response>
     this->status = status;
     std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
     this->done = true;
+    this->doneCallback();
   }
 
 public:
@@ -56,4 +57,5 @@ public:
   }
 
   virtual std::unique_ptr<grpc::Status> readResponse(const Response &response) = 0;
+  virtual void doneCallback() {};
 };

@@ -11,28 +11,11 @@ void Client::put(const std::string &reverseIndex, const std::string &hash, const
   this->putReactor->nextWrite();
 }
 
-void Client::get(const std::string &reverseIndex, std::function<void(std::string)> &callback) {
-  grpc::ClientContext context;
-  blob::GetRequest request;
-  blob::GetResponse response;
-
-  request.set_holder(reverseIndex);
-
-  std::unique_ptr<grpc::ClientReader<blob::GetResponse>> stream = this->stub->Get(&context, request);
-  std::cout << "reading stream:" << std::endl;
-
-  while (stream->Read(&response))
-  {
-    std::string dataChunk = response.datachunk();
-    std::cout << "received: [" << dataChunk << "]" << std::endl;
-    callback(dataChunk);
-  }
-  grpc::Status status = stream->Finish();
-  if (!status.ok()) {
-    std::cout << "an error ocurred: " << status.error_message() <<  std::endl;
-    return;
-  }
-  std::cout << "done reading the restore stream" << std::endl;
+void Client::get(const std::string &reverseIndex) {
+  this->getReactor.reset(new GetReactor());
+  this->getReactor->request.set_holder(reverseIndex);
+  this->stub->async()->Get(&this->getReactor->context, &this->getReactor->request, &(*this->getReactor));
+  this->getReactor->start();
 }
 
 bool Client::remove(const std::string &reverseIndex) {
