@@ -26,7 +26,7 @@ class PutReactor : public ClientBidiReactorBase<blob::PutRequest, blob::PutRespo
   const std::string hash;
   const std::string reverseIndex;
   const std::string data;
-  size_t currentDataSize;
+  size_t currentDataSize = 0;
   const size_t chunkSize = GRPC_CHUNK_SIZE_LIMIT - GRPC_METADATA_SIZE_PER_MESSAGE;
   std::unordered_map<std::string, std::string> *persist;
 public:
@@ -52,6 +52,7 @@ public:
       std::cout << "data exists - aborting" << std::endl;
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
+    std::cout << "data NOT exists - continue [" << this->currentDataSize << "][" << this->data.size() << "]" << std::endl;
     if (this->currentDataSize >= this->data.size())
     {
       std::cout << "wrote all data" << std::endl;
@@ -83,11 +84,26 @@ public:
 
 class RemoveReactor : public grpc::ClientUnaryReactor
 {
+  std::unordered_map<std::string, std::string> *persist;
+  bool done = false;
+
 public:
   grpc::ClientContext context;
   blob::RemoveRequest request;
   google::protobuf::Empty response;
-  bool done = false;
+
+  RemoveReactor(std::unordered_map<std::string, std::string> *persist) : persist(persist) {}
+
+  void OnDone(const grpc::Status &status) override
+  {
+    std::cout << "removing done for " << this->request.holder() << std::endl;
+    this->persist->erase(this->request.holder());
+    this->done = true;
+  }
+
+  bool isDone() {
+    return this->done;
+  }
 };
 
 class Client
@@ -110,5 +126,7 @@ public:
 
   void put(const std::string &reverseIndex, const std::string &hash, const std::string &data);
   void get(const std::string &reverseIndex);
-  bool remove(const std::string &reverseIndex);
+  void remove(const std::string &reverseIndex);
+
+  bool reactorActive();
 };
