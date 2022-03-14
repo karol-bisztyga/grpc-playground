@@ -70,8 +70,14 @@ public:
 class GetReactor : public ClientReadReactorBase<blob::GetRequest, blob::GetResponse>
 {
 public:
-  std::unique_ptr<grpc::Status> readResponse(const blob::GetResponse &response) override {
+  std::unique_ptr<grpc::Status> readResponse(const blob::GetResponse &response) override
+  {
+    std::cout << "received: [" << response.datachunk() << "]" << std::endl;
     return nullptr;
+  }
+
+  void doneCallback() override {
+    std::cout << "done receiving parts" << std::endl;
   }
 };
 
@@ -103,6 +109,6 @@ public:
   std::unique_ptr<RemoveReactor> removeReactor;
 
   void put(const std::string &reverseIndex, const std::string &hash, const std::string &data);
-  void get(const std::string &reverseIndex, std::function<void(std::string)> &callback);
+  void get(const std::string &reverseIndex);
   bool remove(const std::string &reverseIndex);
 };

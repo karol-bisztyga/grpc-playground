@@ -128,11 +128,7 @@ int main(int argc, char **argv)
         std::string reverseIndex;
         std::cin >> reverseIndex;
 
-        std::function<void(std::string)> callback = [](std::string chunk)
-        {
-          std::cout << "read chunk(clb) [" << chunk << "]" << std::endl;
-        };
-        client->get(reverseIndex, callback);
+        client->get(reverseIndex);
         break;
       }
       case 'p':
