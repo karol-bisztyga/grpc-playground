@@ -52,6 +52,7 @@ void put(Client &client, size_t dataSize = 0, char forcedFirstChar = 0)
     hashStream << std::hex << std::setfill('0') << std::setw(2) << std::nouppercase
                << (int)hash[i];
   }
+  std::cout << "trying to put: [size: " << data.size() << "]" << std::endl;//[" << data << "]" << std::endl;
   client.put(reverseIndex, hashStream.str(), data);
 }
 
@@ -90,13 +91,12 @@ int main(int argc, char **argv)
   char option = '?';
   while (option != 'e')
   {
-    std::string options = "gpPrea";
+    std::string options = "gpPre";
     std::cout << "what you want to do?" << std::endl;
     std::cout << "[g] get" << std::endl;
     std::cout << "[p] put" << std::endl;
     std::cout << "[P] put a big chunk of data - over 5MB" << std::endl;
     std::cout << "[r] remove" << std::endl;
-    std::cout << "[a] remove ALL" << std::endl;
     std::cout << "[e] exit" << std::endl;
     std::cout << std::endl
               << "current persist[rev index/hash]:" << std::endl;
@@ -116,6 +116,10 @@ int main(int argc, char **argv)
     if (options.find(option) == std::string::npos)
     {
       std::cout << "invalid command [" << option << "], skipping" << std::endl;
+      continue;
+    }
+    if (client->reactorActive()) {
+      std::cout << "a reactor is working, please wait" << std::endl;
       continue;
     }
     try
@@ -146,22 +150,7 @@ int main(int argc, char **argv)
         std::cout << "remove data, please enter a desired reverse index" << std::endl;
         std::string reverseIndex;
         std::cin >> reverseIndex;
-        if (client->remove(reverseIndex))
-        {
-          client->persist.erase(reverseIndex);
-        }
-        break;
-      }
-      case 'a':
-      {
-        while(!client->persist.empty()) {
-          auto item = client->persist.begin();
-          std::cout << "removing " << item->first << std::endl;
-          if (client->remove(item->first))
-          {
-            client->persist.erase(item->first);
-          }
-        }
+        client->remove(reverseIndex);
         break;
       }
       }
