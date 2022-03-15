@@ -12,49 +12,38 @@
 
 #define MB 1024 * 1024
 
-void put(Client &client, size_t dataSize = 0, char forcedFirstChar = 0)
-{
-  std::cout << "put data" << std::endl;
+// void put(Client &client, size_t dataSize = 0, char forcedFirstChar = 0)
+// {
+//   std::cout << "put data" << std::endl;
+//   if (dataSize == 0) {
+//     dataSize = randomNumber(100, 500);
+//   }
+//   std::string data;
+//   if (forcedFirstChar)
+//   {
+//     data.resize(dataSize);
+//     memset(data.data(), forcedFirstChar, dataSize);
+//   }
+//   else
+//   {
+//     data = randomString(dataSize);
+//   }
 
-  const std::string reverseIndex = randomString();
+//   unsigned char hash[SHA512_DIGEST_LENGTH];
+//   SHA512(
+//       (const unsigned char *)data.data(),
+//       data.size(),
+//       hash);
 
-  if (client.persist.find(reverseIndex) != client.persist.end())
-  {
-    std::cout << "reverse index already exists, aborting: " << reverseIndex << std::endl;
-    return;
-  }
-
-  if (dataSize == 0)
-  {
-    dataSize = randomNumber(100, 500);
-  }
-
-  std::string data;
-  if (forcedFirstChar)
-  {
-    data.resize(dataSize);
-    memset(data.data(), forcedFirstChar, dataSize);
-  }
-  else
-  {
-    data = randomString(dataSize);
-  }
-
-  unsigned char hash[SHA512_DIGEST_LENGTH];
-  SHA512(
-      (const unsigned char *)data.data(),
-      data.size(),
-      hash);
-
-  std::ostringstream hashStream;
-  for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
-  {
-    hashStream << std::hex << std::setfill('0') << std::setw(2) << std::nouppercase
-               << (int)hash[i];
-  }
-  std::cout << "trying to put: [size: " << data.size() << "]" << std::endl;//[" << data << "]" << std::endl;
-  client.put(reverseIndex, hashStream.str(), data);
-}
+//   std::ostringstream hashStream;
+//   for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
+//   {
+//     hashStream << std::hex << std::setfill('0') << std::setw(2) << std::nouppercase
+//                << (int)hash[i];
+//   }
+//   std::cout << "trying to put: [size: " << data.size() << "]" << std::endl;//[" << data << "]" << std::endl;
+//   client.put(reverseIndex, hashStream.str(), data);
+// }
 
 enum class Mode
 {
@@ -80,7 +69,7 @@ int main(int argc, char **argv)
   }
   case Mode::LB:
   {
-    targetStr = "blob.prod.comm.dev:50053";
+    targetStr = "backup.prod.comm.dev:50052";
     client = std::make_unique<Client>(grpc::CreateChannel(targetStr, grpc::SslCredentials(grpc::SslCredentialsOptions())));
     break;
   }
@@ -91,26 +80,13 @@ int main(int argc, char **argv)
   char option = '?';
   while (option != 'e')
   {
-    std::string options = "gpPre";
+    std::string options = "nlrpe";
     std::cout << "what you want to do?" << std::endl;
-    std::cout << "[g] get" << std::endl;
-    std::cout << "[p] put" << std::endl;
-    std::cout << "[P] put a big chunk of data - over 5MB" << std::endl;
-    std::cout << "[r] remove" << std::endl;
+    std::cout << "[n] new backup" << std::endl;
+    std::cout << "[l] send log" << std::endl;
+    std::cout << "[r] recover backup key" << std::endl;
+    std::cout << "[p] pull backup" << std::endl;
     std::cout << "[e] exit" << std::endl;
-    std::cout << std::endl
-              << "current persist[rev index/hash]:" << std::endl;
-    if (!client->persist.size())
-    {
-      std::cout << "(empty)";
-    }
-    else
-    {
-      for (auto it = client->persist.begin(); it != client->persist.end(); it++)
-      {
-        std::cout << it->first << " / " << it->second << std::endl;
-      }
-    }
     std::cout << std::endl;
     std::cin >> option;
     if (options.find(option) == std::string::npos)
@@ -126,31 +102,25 @@ int main(int argc, char **argv)
     {
       switch (option)
       {
-      case 'g':
+      case 'n':
       {
         std::cout << "get data, please enter a desired reverse index" << std::endl;
         std::string reverseIndex;
         std::cin >> reverseIndex;
 
-        client->get(reverseIndex);
+        client->createNewBackup();
         break;
       }
-      case 'p':
+      case 'l':
       {
-        put(*client);
-        break;
-      }
-      case 'P':
-      {
-        put(*client, MB * 20, 66);
         break;
       }
       case 'r':
       {
-        std::cout << "remove data, please enter a desired reverse index" << std::endl;
-        std::string reverseIndex;
-        std::cin >> reverseIndex;
-        client->remove(reverseIndex);
+        break;
+      }
+      case 'p':
+      {
         break;
       }
       }

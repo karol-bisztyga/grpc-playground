@@ -2,9 +2,6 @@
 
 #include <functional>
 
-#include "../_generated/blob.pb.h"
-#include "../_generated/blob.grpc.pb.h"
-
 template <class Request, class Response>
 class ClientReadReactorBase : public grpc::ClientReadReactor<Response>
 {

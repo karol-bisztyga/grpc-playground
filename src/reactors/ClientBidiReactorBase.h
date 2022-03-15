@@ -1,8 +1,5 @@
 #include <grpcpp/grpcpp.h>
 
-#include "../_generated/blob.pb.h"
-#include "../_generated/blob.grpc.pb.h"
-
 template <class Request, class Response>
 class ClientBidiReactorBase : public grpc::ClientBidiReactor<Request, Response>
 {
