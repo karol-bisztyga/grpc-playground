@@ -1,5 +1,8 @@
 #include <grpcpp/grpcpp.h>
 
+#include "../_generated/backup.pb.h"
+#include "../_generated/backup.grpc.pb.h"
+
 template <class Request, class Response>
 class ClientBidiReactorBase : public grpc::ClientBidiReactor<Request, Response>
 {

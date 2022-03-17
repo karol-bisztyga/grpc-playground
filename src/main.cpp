@@ -61,7 +61,7 @@ int main(int argc, char **argv)
   {
   case Mode::LOCALHOST:
   {
-    targetStr = "localhost:50053";
+    targetStr = "localhost:50052";
     client = std::make_unique<Client>(grpc::CreateChannel(
         targetStr,
         grpc::InsecureChannelCredentials()));
@@ -104,15 +104,19 @@ int main(int argc, char **argv)
       {
       case 'n':
       {
-        std::cout << "get data, please enter a desired reverse index" << std::endl;
-        std::string reverseIndex;
-        std::cin >> reverseIndex;
+        std::cout << "please specify authentication type - mocked to pake for now" << std::endl;
+        // std::string reverseIndex;
+        // std::cin >> reverseIndex;
 
-        client->createNewBackup();
+        // mocked for now
+        AuthenticationType authenticationType = AuthenticationType::PAKE;
+
+        client->createNewBackup(authenticationType);
         break;
       }
       case 'l':
       {
+        client->sendLog();
         break;
       }
       case 'r':

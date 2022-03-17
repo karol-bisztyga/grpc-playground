@@ -14,7 +14,12 @@ public:
 
   void nextWrite()
   {
-    std::unique_ptr<grpc::Status> status = this->prepareRequest(this->request);
+    std::unique_ptr<grpc::Status> status;
+    try {
+      status = this->prepareRequest(this->request);
+    } catch(std::runtime_error &e) {
+      status = std::make_unique<grpc::Status>(grpc::StatusCode::INTERNAL, e.what());
+    }
     if (status != nullptr) {
       this->terminate(*status);
       return;
