@@ -38,6 +38,8 @@ authentication is done
 
 SEND_KEY_ENTROPY
 client => keyEntropy => server
+SEND_DATA_HASH
+client => dataHash => server
 SEND_CHUNKS
 client => data chunk 0 => server
 client => data chunk 1 => server
@@ -52,7 +54,8 @@ class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBac
   enum class State {
     AUTHENTICATION = 1,
     KEY_ENTROPY = 2,
-    CHUNKS = 3,
+    DATA_HASH = 3,
+    CHUNKS = 4,
   };
   std::unique_ptr<AuthenticationManager> authenticationManager;
   const size_t chunkLimit;
@@ -97,6 +100,13 @@ public:
         entropy->set_rawmessage(randomString());
       }
       request.set_allocated_backupkeyentropy(entropy);
+      this->state = State::DATA_HASH;
+      return nullptr;
+    }
+    // send data hash
+    if (this->state == State::DATA_HASH) {
+      std::cout << "here prepare request data hash" << std::endl;
+      request.set_newcompactionhash(randomString());
       this->state = State::CHUNKS;
       return nullptr;
     }
