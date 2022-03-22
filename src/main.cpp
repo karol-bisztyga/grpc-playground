@@ -104,14 +104,7 @@ int main(int argc, char **argv)
       {
       case 'n':
       {
-        std::cout << "please specify authentication type - mocked to pake for now" << std::endl;
-        // std::string reverseIndex;
-        // std::cin >> reverseIndex;
-
-        // mocked for now
-        AuthenticationType authenticationType = AuthenticationType::PAKE;
-
-        client->createNewBackup(authenticationType);
+        client->createNewBackup();
         break;
       }
       case 'l':

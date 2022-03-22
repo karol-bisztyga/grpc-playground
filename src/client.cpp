@@ -4,8 +4,8 @@
 Client::Client(std::shared_ptr<grpc::Channel> channel)
     : stub(backup::BackupService::NewStub(channel)) {}
 
-void Client::createNewBackup(AuthenticationType authenticationType) {
-  this->createNewBackupReactor.reset(new CreateNewBackupReactor(authenticationType, randomNumber(3,6)));
+void Client::createNewBackup() {
+  this->createNewBackupReactor.reset(new CreateNewBackupReactor(randomNumber(3,6)));
   this->stub->async()->CreateNewBackup(&this->createNewBackupReactor->context, &(*this->createNewBackupReactor));
   this->createNewBackupReactor->nextWrite();
 }

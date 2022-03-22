@@ -43,11 +43,10 @@ get_filename_component(hw_proto "./protos/helloworld.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 file(GLOB GENERATED_CODE "./cmake/build/_generated/*.cc")
-file(GLOB SOURCE_CODE "./src/*.cpp" "./src/Authentication/*.cpp")
+file(GLOB SOURCE_CODE "./src/*.cpp")
 
 include_directories(
   ./src
-  ./src/Authentication
   ./src/reactors
   ./cmake/build/_generated
 )
