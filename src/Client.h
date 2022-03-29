@@ -14,8 +14,11 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include <thread>
 
 /*
+SEND_USER_ID
+client => userID => server
 SEND_KEY_ENTROPY
 client => keyEntropy => server
 SEND_DATA_HASH
@@ -32,13 +35,14 @@ end connection
 class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBackupRequest, backup::CreateNewBackupResponse>
 {
   enum class State {
-    KEY_ENTROPY = 1,
-    DATA_HASH = 2,
-    CHUNKS = 3,
+    USER_ID = 1,
+    KEY_ENTROPY = 2,
+    DATA_HASH = 3,
+    CHUNKS = 4,
   };
   const size_t chunkLimit;
   size_t currentChunk = 0;
-  State state = State::KEY_ENTROPY;
+  State state = State::USER_ID;
 public:
   CreateNewBackupReactor(size_t chunkLimit) : chunkLimit(chunkLimit) {
     std::cout << "create new backup init with chunks limit: " << chunkLimit << std::endl;
@@ -46,7 +50,16 @@ public:
 
   std::unique_ptr<grpc::Status> prepareRequest(backup::CreateNewBackupRequest &request, std::shared_ptr<backup::CreateNewBackupResponse> previousResponse) override
   {
-    std::cout << "here prepare request" << std::endl;
+    std::cout << "here prepare request [" << std::hash<std::thread::id>{}(std::this_thread::get_id())
+              << "]" << std::endl;
+    // send user id
+    if (this->state == State::USER_ID) {
+      std::string userID = randomString();
+      std::cout << "here prepare request user id: " << userID << std::endl;
+      request.set_userid(userID);
+      this->state = State::KEY_ENTROPY;
+      return nullptr;
+    }
     // send key entropy
     if (this->state == State::KEY_ENTROPY) {
       std::string keyEntropy = randomString();
