@@ -34,17 +34,19 @@ end connection
 
 class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBackupRequest, backup::CreateNewBackupResponse>
 {
-  enum class State {
+  enum class State
+  {
     USER_ID = 1,
     KEY_ENTROPY = 2,
     DATA_HASH = 3,
     CHUNKS = 4,
   };
+  const std::string userID;
   const size_t chunkLimit;
   size_t currentChunk = 0;
   State state = State::USER_ID;
 public:
-  CreateNewBackupReactor(size_t chunkLimit) : chunkLimit(chunkLimit) {
+  CreateNewBackupReactor(const std::string &userID, size_t chunkLimit) : userID(userID), chunkLimit(chunkLimit) {
     std::cout << "create new backup init with chunks limit: " << chunkLimit << std::endl;
   }
 
@@ -54,9 +56,8 @@ public:
               << "]" << std::endl;
     // send user id
     if (this->state == State::USER_ID) {
-      std::string userID = randomString();
-      std::cout << "here prepare request user id: " << userID << std::endl;
-      request.set_userid(userID);
+      std::cout << "here prepare request user id: " << this->userID << std::endl;
+      request.set_userid(this->userID);
       this->state = State::KEY_ENTROPY;
       return nullptr;
     }
@@ -88,33 +89,58 @@ public:
   }
 };
 
-class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, google::protobuf::Empty> {
+class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, google::protobuf::Empty>
+{
+  enum class State {
+    USER_ID = 1,
+    LOG_CHUNK = 2,
+  };
+
+  State state = State::USER_ID;
   const size_t chunkLimit;
   size_t currentChunk = 0;
-
+  const std::string userID;
 public:
-  SendLogReactor(size_t chunkLimit) : chunkLimit(chunkLimit) {
+  SendLogReactor(const std::string &userID, size_t chunkLimit) : userID(userID), chunkLimit(chunkLimit) {
+    if (this->userID.empty()) {
+      throw std::runtime_error("user id cannot be empty");
+    }
     std::cout << "send log init with chunks limit: " << chunkLimit << std::endl;
   }
 
   std::unique_ptr<grpc::Status> prepareRequest(backup::SendLogRequest &request) override {
-    if (this->currentChunk >= this->chunkLimit) {
-      return std::make_unique<grpc::Status>(grpc::Status::OK);
+    if (this->state == State::USER_ID) {
+      request.set_userid(this->userID);
+      this->state = State::LOG_CHUNK;
+      return nullptr;
     }
-    std::string dataChunk = randomString(1000);
-    std::cout << "here prepare request data chunk " << this->currentChunk << "/" << dataChunk.size() << std::endl;
-    request.set_logdata(dataChunk);
-    ++this->currentChunk;
-    return nullptr;
+    if (this->state == State::LOG_CHUNK) {
+      if (this->currentChunk >= this->chunkLimit)
+      {
+        return std::make_unique<grpc::Status>(grpc::Status::OK);
+      }
+      size_t size = randomNumber(0,1) ? 1024*1024*2 : 1000;
+      std::string dataChunk = mockBytes(size);
+      std::cout << "here prepare request data chunk " << this->currentChunk << "/" << dataChunk.size() << std::endl;
+      request.set_logdata(dataChunk);
+      ++this->currentChunk;
+      return nullptr;
+    }
+    throw std::runtime_error("invalid state");
+  }
+
+  void doneCallback() override {
+    std::cout << "send log done" << std::endl;
   }
 };
 
 class Client
 {
   std::unique_ptr<backup::BackupService::Stub> stub;
+  const std::string userID;
 
 public:
-  Client(std::shared_ptr<grpc::Channel> channel);
+  Client(std::shared_ptr<grpc::Channel> channel, const std::string &userID);
 
   std::unique_ptr<CreateNewBackupReactor> createNewBackupReactor;
   std::unique_ptr<SendLogReactor> sendLogReactor;

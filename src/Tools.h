@@ -21,4 +21,5 @@ const size_t GRPC_METADATA_SIZE_PER_MESSAGE = 5;
 
 int randomNumber(const int from, const int to);
 std::string randomString(size_t size = 20);
+std::string mockBytes(size_t size = 1024 * 1024);
 long long currentTimestamp();

@@ -55,6 +55,7 @@ int main(int argc, char **argv)
 {
   std::string targetStr;
   std::unique_ptr<Client> client;
+  const std::string userID = std::to_string(randomNumber(1000,10000));
 
   Mode mode = Mode::LOCALHOST;
   switch(mode)
@@ -64,18 +65,18 @@ int main(int argc, char **argv)
     targetStr = "localhost:50052";
     client = std::make_unique<Client>(grpc::CreateChannel(
         targetStr,
-        grpc::InsecureChannelCredentials()));
+        grpc::InsecureChannelCredentials()), userID);
     break;
   }
   case Mode::LB:
   {
     targetStr = "backup.prod.comm.dev:50052";
-    client = std::make_unique<Client>(grpc::CreateChannel(targetStr, grpc::SslCredentials(grpc::SslCredentialsOptions())));
+    client = std::make_unique<Client>(grpc::CreateChannel(targetStr, grpc::SslCredentials(grpc::SslCredentialsOptions())), userID);
     break;
   }
   }
 
-  std::cout << "client start on: " << targetStr << std::endl;
+  std::cout << "client(id: " << userID << ") start on: " << targetStr << std::endl;
 
   char option = '?';
   while (option != 'e')

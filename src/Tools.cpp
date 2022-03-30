@@ -23,6 +23,13 @@ std::string randomString(size_t size)
   return result;
 }
 
+std::string mockBytes(size_t size) {
+  std::string result;
+  result.resize(size);
+  memset((char*)result.data(), 'A', size);
+  return result;
+}
+
 long long currentTimestamp()
 {
   using namespace std::chrono;

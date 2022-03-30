@@ -36,7 +36,6 @@ public:
     }
     this->StartWritesDone();
     this->status = status;
-    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
     this->done = true;
   }
 
@@ -68,6 +67,7 @@ public:
   void OnDone(const grpc::Status &status) override
   {
     this->terminate(status);
+    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
   }
 
   virtual std::unique_ptr<grpc::Status> prepareRequest(Request & request, std::shared_ptr<Response> previousResponse) = 0;
