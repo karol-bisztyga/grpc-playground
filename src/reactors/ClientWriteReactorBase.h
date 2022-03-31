@@ -3,7 +3,6 @@
 template<class Request, class Response>
 class ClientWriteReactorBase : public grpc::ClientWriteReactor<Request>
 {
-  grpc::Status status;
   bool done = false;
   bool initialized = 0;
   Request request;
@@ -11,6 +10,7 @@ class ClientWriteReactorBase : public grpc::ClientWriteReactor<Request>
 public:
   Response response;
   grpc::ClientContext context;
+  grpc::Status status;
 
   void nextWrite()
   {
@@ -44,14 +44,12 @@ public:
 
   void terminate(const grpc::Status &status)
   {
+    this->status = status;
     if (this->done) {
       return;
     }
-    this->status = status;
-    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
     this->done = true;
     this->StartWritesDone();
-    this->doneCallback();
   }
 
   bool isDone()
@@ -62,6 +60,7 @@ public:
   void OnDone(const grpc::Status &status) override
   {
     this->terminate(status);
+    this->doneCallback();
   }
 
   virtual std::unique_ptr<grpc::Status> prepareRequest(Request &request) = 0;

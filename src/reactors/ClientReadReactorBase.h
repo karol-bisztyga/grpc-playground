@@ -11,13 +11,11 @@ class ClientReadReactorBase : public grpc::ClientReadReactor<Response>
 
   void terminate(const grpc::Status &status)
   {
+    this->status = status;
     if (this->done) {
       return;
     }
-    this->status = status;
-    std::cout << "DONE [code=" << status.error_code() << "][err=" << status.error_message() << "]" << std::endl;
     this->done = true;
-    this->doneCallback();
   }
 
 public:
@@ -47,6 +45,7 @@ public:
   void OnDone(const grpc::Status &status) override
   {
     this->terminate(status);
+    this->doneCallback();
   }
 
   bool isDone() {

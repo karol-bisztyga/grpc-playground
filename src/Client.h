@@ -93,7 +93,8 @@ class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, goo
 {
   enum class State {
     USER_ID = 1,
-    LOG_CHUNK = 2,
+    LOG_HASH = 2,
+    LOG_CHUNK = 3,
   };
 
   State state = State::USER_ID;
@@ -111,15 +112,20 @@ public:
   std::unique_ptr<grpc::Status> prepareRequest(backup::SendLogRequest &request) override {
     if (this->state == State::USER_ID) {
       request.set_userid(this->userID);
+      this->state = State::LOG_HASH;
+      return nullptr;
+    }
+    if (this->state == State::LOG_HASH) {
+      // todo calculate hash
+      request.set_loghash(randomString());
       this->state = State::LOG_CHUNK;
       return nullptr;
     }
     if (this->state == State::LOG_CHUNK) {
-      if (this->currentChunk >= this->chunkLimit)
-      {
+      size_t size = randomNumber(0, 1) ? 1024 * 1024 * 2 : 1024;
+      if (this->currentChunk >= this->chunkLimit) {
         return std::make_unique<grpc::Status>(grpc::Status::OK);
       }
-      size_t size = randomNumber(0,1) ? 1024*1024*2 : 1000;
       std::string dataChunk = mockBytes(size);
       std::cout << "here prepare request data chunk " << this->currentChunk << "/" << dataChunk.size() << std::endl;
       request.set_logdata(dataChunk);
@@ -130,7 +136,7 @@ public:
   }
 
   void doneCallback() override {
-    std::cout << "send log done" << std::endl;
+    std::cout << "send log done: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
   }
 };
 

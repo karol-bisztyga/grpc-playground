@@ -30,12 +30,13 @@ public:
     }
   }
 
-  void terminate(const grpc::Status &status) {
+  void terminate(const grpc::Status &status)
+  {
+    this->status = status;
     if (this->done) {
       return;
     }
     this->StartWritesDone();
-    this->status = status;
     this->done = true;
   }
 
