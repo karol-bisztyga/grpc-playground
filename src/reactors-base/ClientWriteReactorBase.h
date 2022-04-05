@@ -1,3 +1,6 @@
+#include "../_generated/backup.pb.h"
+#include "../_generated/backup.grpc.pb.h"
+
 #include <grpcpp/grpcpp.h>
 
 template<class Request, class Response>
