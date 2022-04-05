@@ -82,6 +82,7 @@ int main(int argc, char **argv)
   while (option != 'e')
   {
     std::string options = "nlrpe";
+    std::cout << " - current backup id: [" << client->getCurrentBackupID() << "]" << std::endl;
     std::cout << "what you want to do?" << std::endl;
     std::cout << "[n] new backup" << std::endl;
     std::cout << "[l] send log" << std::endl;

@@ -45,8 +45,11 @@ class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBac
   const size_t chunkLimit;
   size_t currentChunk = 0;
   State state = State::USER_ID;
+  std::string backupID;
+  const std::function<void(const std::string&)> setLasBackupIDCallback;
 public:
-  CreateNewBackupReactor(const std::string &userID, size_t chunkLimit) : userID(userID), chunkLimit(chunkLimit) {
+  CreateNewBackupReactor(const std::string &userID, size_t chunkLimit, const std::function<void(const std::string &)> &setLasBackupIDCallback) : userID(userID), chunkLimit(chunkLimit), setLasBackupIDCallback(setLasBackupIDCallback)
+  {
     std::cout << "create new backup init with chunks limit: " << chunkLimit << std::endl;
   }
 
@@ -54,6 +57,10 @@ public:
   {
     std::cout << "here prepare request [" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]" << std::endl;
+    if (!previousResponse->backupid().empty()) {
+      this->backupID = previousResponse->backupid();
+      std::cout << "got backup id: " << this->backupID << std::endl;
+    }
     // send user id
     if (this->state == State::USER_ID) {
       std::cout << "here prepare request user id: " << this->userID << std::endl;
@@ -87,22 +94,30 @@ public:
     ++this->currentChunk;
     return nullptr;
   }
+
+  void doneCallback() override {
+    std::cout << "create new backup DONE, backup id: " << this->backupID << std::endl;
+    this->setLasBackupIDCallback(this->backupID);
+  } 
 };
 
 class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, google::protobuf::Empty>
 {
   enum class State {
     USER_ID = 1,
-    LOG_HASH = 2,
-    LOG_CHUNK = 3,
+    BACKUP_ID = 2,
+    LOG_HASH = 3,
+    LOG_CHUNK = 4,
   };
 
   State state = State::USER_ID;
   const size_t chunkLimit;
   size_t currentChunk = 0;
   const std::string userID;
+  std::string lastBackupID;
 public:
-  SendLogReactor(const std::string &userID, size_t chunkLimit) : userID(userID), chunkLimit(chunkLimit) {
+  SendLogReactor(const std::string &userID, size_t chunkLimit, std::string lastBackupID) : userID(userID), chunkLimit(chunkLimit), lastBackupID(lastBackupID)
+  {
     if (this->userID.empty()) {
       throw std::runtime_error("user id cannot be empty");
     }
@@ -112,6 +127,11 @@ public:
   std::unique_ptr<grpc::Status> prepareRequest(backup::SendLogRequest &request) override {
     if (this->state == State::USER_ID) {
       request.set_userid(this->userID);
+      this->state = State::BACKUP_ID;
+      return nullptr;
+    }
+    if (this->state == State::BACKUP_ID) {
+      request.set_backupid(this->lastBackupID);
       this->state = State::LOG_HASH;
       return nullptr;
     }
@@ -144,6 +164,11 @@ class Client
 {
   std::unique_ptr<backup::BackupService::Stub> stub;
   const std::string userID;
+  std::string lastBackupID;
+
+  const std::function<void(const std::string&)> setLasBackupIDCallback = [this](const std::string &backupID){
+    this->lastBackupID = backupID;
+  };
 
 public:
   Client(std::shared_ptr<grpc::Channel> channel, const std::string &userID);
@@ -157,4 +182,8 @@ public:
   void pullBackup();
 
   bool reactorActive();
+
+  std::string getCurrentBackupID () {
+    return this->lastBackupID;
+  }
 };

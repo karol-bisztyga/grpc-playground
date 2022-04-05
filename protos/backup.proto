@@ -45,8 +45,9 @@ message CreateNewBackupResponse {
 message SendLogRequest {
   oneof data {
     string userID = 1;
-    bytes logHash = 2;
-    bytes logData = 3;
+    string backupID = 2;
+    bytes logHash = 3;
+    bytes logData = 4;
   }
 }
 
