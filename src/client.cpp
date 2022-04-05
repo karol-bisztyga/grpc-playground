@@ -20,6 +20,13 @@ void Client::sendLog() {
   this->sendLogReactor->nextWrite();
 }
 
+void recoverBackupKey() {
+  throw std::runtime_error("unimplemented");
+}
+void pullBackup() {
+  throw std::runtime_error("unimplemented");
+}
+
 bool Client::reactorActive()
 {
   if (this->createNewBackupReactor && !this->createNewBackupReactor->isDone())
