@@ -19,13 +19,13 @@ class ExchangeBidiReactor : public ServerBidiReactorBase<example::DataRequest, e
   size_t i = 0;
 
 public:
-  std::unique_ptr<grpc::Status> handleRequest(example::DataRequest request, example::DataResponse *response) override
+  std::unique_ptr<ServerBidiReactorStatus> handleRequest(example::DataRequest request, example::DataResponse *response) override
   {
-    std::cout << "received: " << request.data() << "/ gonna respond: " << this->responses.back() << std::endl;
     if (this->responses.empty())
     {
-      return std::make_unique<grpc::Status>(grpc::Status::OK);
+      return std::make_unique<ServerBidiReactorStatus>(grpc::Status::OK);
     }
+    std::cout << "received: " << request.data() << "/ gonna respond: " << this->responses.back() << std::endl;
     // if (i > 1)
     // {
     //   throw std::runtime_error("test error");
@@ -38,7 +38,7 @@ public:
 
   void doneCallback() override
   {
-    std::cout << "done CLB" << std::endl;
+    std::cout << "done CLB: " << this->status.status.error_code() << std::endl;
   }
 };
 

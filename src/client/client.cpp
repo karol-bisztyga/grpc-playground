@@ -24,11 +24,15 @@ public:
       std::cout << "got response: [" << previousResponse->data() << "]" << std::endl;
     }
     std::string str;
-    std::cout << "enter a message(type 'exit' to end the connection): ";
+    std::cout << "enter a message(type 'exit' to end the connection)(type err to trigger error): ";
     std::getline(std::cin, str);
     if (str == "exit")
     {
       return std::make_unique<grpc::Status>(grpc::Status::OK);
+    }
+    if (str == "err")
+    {
+      throw std::runtime_error("error triggered");
     }
     request.set_data(str);
     return nullptr;
