@@ -9,7 +9,6 @@ template <class Request, class Response>
 class ClientReadReactorBase : public grpc::ClientReadReactor<Response>
 {
   Response response;
-  grpc::Status status;
   bool done = false;
 
   void terminate(const grpc::Status &status)
@@ -20,6 +19,9 @@ class ClientReadReactorBase : public grpc::ClientReadReactor<Response>
     }
     this->done = true;
   }
+
+protected:
+  grpc::Status status;
 
 public:
   Request request;
@@ -37,10 +39,14 @@ public:
       this->terminate(grpc::Status(grpc::StatusCode::UNKNOWN, "read error"));
       return;
     }
-    std::unique_ptr<grpc::Status> status = this->readResponse(this->response);
-    if (status != nullptr) {
-      this->terminate(*status);
-      return;
+    try {
+      std::unique_ptr<grpc::Status> status = this->readResponse(this->response);
+      if (status != nullptr) {
+        this->terminate(*status);
+        return;
+      }
+    } catch(std::runtime_error &e) {
+      this->terminate(grpc::Status(grpc::StatusCode::INTERNAL, e.what()));
     }
     this->StartRead(&this->response);
   }

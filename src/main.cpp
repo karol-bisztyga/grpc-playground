@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 {
   std::string targetStr;
   std::unique_ptr<Client> client;
-  const std::string userID = std::to_string(randomNumber(1000,10000));
+  const std::string userID = "3015";//std::to_string(randomNumber(1000,10000));
 
   Mode mode = Mode::LOCALHOST;
   switch(mode)
@@ -120,6 +120,7 @@ int main(int argc, char **argv)
       }
       case 'p':
       {
+        client->pullBackup();
         break;
       }
       }

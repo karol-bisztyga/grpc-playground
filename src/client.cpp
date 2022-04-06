@@ -20,11 +20,16 @@ void Client::sendLog() {
   this->sendLogReactor->nextWrite();
 }
 
-void recoverBackupKey() {
+void Client::recoverBackupKey() {
   throw std::runtime_error("unimplemented");
 }
-void pullBackup() {
-  throw std::runtime_error("unimplemented");
+
+void Client::pullBackup() {
+  this->pullBackupReactor.reset(new PullBackupReactor());
+  this->pullBackupReactor->request.set_userid(this->userID);
+  this->pullBackupReactor->request.set_backupid(this->lastBackupID);
+  this->stub->async()->PullBackup(&this->pullBackupReactor->context, &this->pullBackupReactor->request, &(*this->pullBackupReactor));
+  this->pullBackupReactor->start();
 }
 
 bool Client::reactorActive()
