@@ -88,6 +88,18 @@ public:
   example::DataRequest request;
   example::DataResponse response;
   bool done = false;
+  grpc::Status status;
+
+  void OnDone(const grpc::Status& status) override {
+    std::cout << "here on done" << std::endl;
+    this->status = status;
+    this->done = true;
+    if (!status.ok()) {
+      std::cout << "unary error: " + status.error_message() << std::endl;
+      return;
+    }
+    std::cout << "unary response: " << this->response.data() << std::endl;
+  }
 };
 
 struct Client
@@ -183,14 +195,9 @@ void performUnary(Client &client)
   std::getline(std::cin, str);
   client.initializeUnaryReactor();
   client.unaryReactor->request.set_data(str);
-  client.stub->async()->Unary(&client.unaryReactor->context, &client.unaryReactor->request, &client.unaryReactor->response, [&client](grpc::Status status)
-                              {
-                                client.unaryReactor->done = true;
-                                if (!status.ok()) {
-                                  std::cout << "unary error: " + status.error_message() << std::endl;
-                                  return;
-                                }
-                                std::cout << "unary response: " << client.unaryReactor->response.data() << std::endl; });
+
+  client.stub->async()->Unary(&client.unaryReactor->context, &client.unaryReactor->request, &client.unaryReactor->response, &(*client.unaryReactor));
+  client.unaryReactor->StartCall();
 }
 
 int main(int argc, char **argv)
