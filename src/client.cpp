@@ -25,10 +25,10 @@ class GreeterClient {
     // Data we are sending to the server.
     HelloRequest request;
     std::cout << "req size 0: " << request.ByteSizeLong() << std::endl;
-    request.add_inner()->set_name("name");
+    request.set_name("name");
     std::cout << "req size with name: " << request.ByteSizeLong() << std::endl;
     for (size_t i = 0; i < 3; ++i) {
-      request.add_inner()->set_datachunk("aaaaaaaaaa");
+      request.set_datachunk("aaaaaaaaaa");
       std::cout << "req size with data chunk: " << (i+1) << ": " << request.ByteSizeLong() << std::endl;
     }
 
