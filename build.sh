@@ -6,9 +6,16 @@ mkdir -p cmake/build || echo "build folder exists, skipping"
 
 ./generate.sh
 
+TARGET="all"
+if [ ! -z "$1" ]; then
+  TARGET=$1
+fi
+
+echo "building target: $TARGET"
+
 cd cmake/build
 cmake ../..
-make
+cmake --build . --target ${TARGET}
 
 cd ../..
 
