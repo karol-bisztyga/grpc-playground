@@ -8,7 +8,7 @@
 #include <functional>
 #include <thread>
 
-class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, google::protobuf::Empty>
+class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, backup::SendLogResponse>
 {
   enum class State {
     USER_ID = 1,
@@ -64,5 +64,8 @@ public:
 
   void doneCallback() override {
     std::cout << "send log done: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
+    if (this->status.ok()) {
+      std::cout << "send log successful - new log id is: " << this->response.logid() << std::endl;
+    }
   }
 };
