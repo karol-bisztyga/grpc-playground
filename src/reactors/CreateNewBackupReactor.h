@@ -90,6 +90,9 @@ public:
 
   void doneCallback() override
   {
+    if (!this->status.ok()) {
+      return;
+    }
     std::cout << "create new backup DONE, backup id: " << this->backupID << std::endl;
     this->setLasBackupIDCallback(this->backupID);
   }
