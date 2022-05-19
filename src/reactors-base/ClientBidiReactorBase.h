@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../_generated/backup.pb.h"
 #include "../_generated/backup.grpc.pb.h"
 

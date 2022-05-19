@@ -22,8 +22,11 @@ class SendLogReactor : public ClientWriteReactorBase<backup::SendLogRequest, bac
   size_t currentChunk = 0;
   const std::string userID;
   std::string lastBackupID;
+
+  const std::function<void(const std::string &)> setLasBackupIDCallback;
+
 public:
-  SendLogReactor(const std::string &userID, size_t chunkLimit, std::string lastBackupID) : userID(userID), chunkLimit(chunkLimit), lastBackupID(lastBackupID)
+  SendLogReactor(const std::string &userID, size_t chunkLimit, std::string lastBackupID, const std::function<void(const std::string &)> &setLasBackupIDCallback) : userID(userID), chunkLimit(chunkLimit), lastBackupID(lastBackupID), setLasBackupIDCallback(setLasBackupIDCallback)
   {
     if (this->userID.empty()) {
       throw std::runtime_error("user id cannot be empty");
@@ -54,7 +57,6 @@ public:
         return std::make_unique<grpc::Status>(grpc::Status::OK);
       }
       std::string dataChunk = mockBytes(size);
-      std::cout << "here prepare request data chunk " << this->currentChunk << "/" << dataChunk.size() << std::endl;
       request.set_logdata(dataChunk);
       ++this->currentChunk;
       return nullptr;
@@ -66,6 +68,7 @@ public:
     std::cout << "send log done: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
     if (this->status.ok()) {
       std::cout << "send log successful - new log id is: " << this->response.logid() << std::endl;
+      this->setLasBackupIDCallback(this->response.logid());
     }
   }
 };

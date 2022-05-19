@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package backup;
 
+import "google/protobuf/empty.proto";
+
 /**
  * API - description
  *  CreateNewBackup - This method is called when we want to create a new backup.
@@ -21,6 +23,7 @@ service BackupService {
   rpc SendLog(stream SendLogRequest) returns (SendLogResponse) {}
   rpc RecoverBackupKey(stream RecoverBackupKeyRequest) returns (stream RecoverBackupKeyResponse) {}
   rpc PullBackup(PullBackupRequest) returns (stream PullBackupResponse) {}
+  rpc AddAttachment(stream AddAttachmentRequest) returns (google.protobuf.Empty) {}
 }
 
 // CreateNewBackup
@@ -74,5 +77,17 @@ message PullBackupResponse {
   oneof data {
     bytes compactionChunk = 1;
     bytes logChunk = 2;
+  }
+}
+
+// AddAttachment
+
+message AddAttachmentRequest {
+  oneof data {
+    string userID = 1;
+    string backupID = 2;
+    string logID = 3;
+    bytes dataHash = 4;
+    bytes dataChunk = 5;
   }
 }

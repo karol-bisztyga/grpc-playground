@@ -81,11 +81,14 @@ int main(int argc, char **argv)
   char option = '?';
   while (option != 'e')
   {
-    std::string options = "nlrpe";
+    std::string options = "nblkrpe";
     std::cout << " - current backup id: [" << client->getCurrentBackupID() << "]" << std::endl;
+    std::cout << " - current log id: [" << client->getCurrentLogID() << "]" << std::endl;
     std::cout << "what you want to do?" << std::endl;
     std::cout << "[n] new backup" << std::endl;
+    std::cout << "[b] add attachment to last backup" << std::endl;
     std::cout << "[l] send log" << std::endl;
+    std::cout << "[k] add attachment to last log" << std::endl;
     std::cout << "[r] recover backup key" << std::endl;
     std::cout << "[p] pull backup" << std::endl;
     std::cout << "[e] exit" << std::endl;
@@ -109,9 +112,19 @@ int main(int argc, char **argv)
         client->createNewBackup();
         break;
       }
+      case 'b':
+      {
+        client->addAttachment(false);
+        break;
+      }
       case 'l':
       {
         client->sendLog();
+        break;
+      }
+      case 'k':
+      {
+        client->addAttachment(true);
         break;
       }
       case 'r':

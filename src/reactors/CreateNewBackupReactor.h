@@ -33,18 +33,16 @@ class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBac
   size_t currentChunk = 0;
   State state = State::USER_ID;
   std::string backupID;
-  const std::function<void(const std::string &)> setLasBackupIDCallback;
+  const std::function<void(const std::string &)> setLastBackupIDCallback;
 
 public:
-  CreateNewBackupReactor(const std::string &userID, size_t chunkLimit, const std::function<void(const std::string &)> &setLasBackupIDCallback) : userID(userID), chunkLimit(chunkLimit), setLasBackupIDCallback(setLasBackupIDCallback)
+  CreateNewBackupReactor(const std::string &userID, size_t chunkLimit, const std::function<void(const std::string &)> &setLastBackupIDCallback) : userID(userID), chunkLimit(chunkLimit), setLastBackupIDCallback(setLastBackupIDCallback)
   {
     std::cout << "create new backup init with chunks limit: " << chunkLimit << std::endl;
   }
 
   std::unique_ptr<grpc::Status> prepareRequest(backup::CreateNewBackupRequest &request, std::shared_ptr<backup::CreateNewBackupResponse> previousResponse) override
   {
-    std::cout << "here prepare request [" << std::hash<std::thread::id>{}(std::this_thread::get_id())
-              << "]" << std::endl;
     if (!previousResponse->backupid().empty())
     {
       this->backupID = previousResponse->backupid();
@@ -53,7 +51,6 @@ public:
     // send user id
     if (this->state == State::USER_ID)
     {
-      std::cout << "here prepare request user id: " << this->userID << std::endl;
       request.set_userid(this->userID);
       this->state = State::KEY_ENTROPY;
       return nullptr;
@@ -62,7 +59,6 @@ public:
     if (this->state == State::KEY_ENTROPY)
     {
       std::string keyEntropy = randomString();
-      std::cout << "here prepare request key entropy: " << keyEntropy << std::endl;
       request.set_keyentropy(keyEntropy);
       this->state = State::DATA_HASH;
       return nullptr;
@@ -71,7 +67,6 @@ public:
     if (this->state == State::DATA_HASH)
     {
       std::string hash = randomString();
-      std::cout << "here prepare request data hash " << hash << std::endl;
       request.set_newcompactionhash(hash);
       this->state = State::CHUNKS;
       return nullptr;
@@ -82,7 +77,6 @@ public:
       return std::make_unique<grpc::Status>(grpc::Status::OK);
     }
     std::string dataChunk = randomString(1000);
-    std::cout << "here prepare request data chunk " << this->currentChunk << "/" << dataChunk.size() << std::endl;
     request.set_newcompactionchunk(dataChunk);
     ++this->currentChunk;
     return nullptr;
@@ -94,6 +88,6 @@ public:
       return;
     }
     std::cout << "create new backup DONE, backup id: " << this->backupID << std::endl;
-    this->setLasBackupIDCallback(this->backupID);
+    this->setLastBackupIDCallback(this->backupID);
   }
 };
