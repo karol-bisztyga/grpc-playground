@@ -5,7 +5,7 @@ Client::Client(std::shared_ptr<grpc::Channel> channel, const std::string &userID
     : stub(backup::BackupService::NewStub(channel)), userID(userID) {}
 
 void Client::createNewBackup() {
-  this->createNewBackupReactor.reset(new CreateNewBackupReactor(this->userID, randomNumber(3, 6), this->setLastBackupIDCallback));
+  this->createNewBackupReactor.reset(new CreateNewBackupReactor(this->userID, this->deviceID, randomNumber(3, 6), this->setLastBackupIDCallback));
   this->stub->async()->CreateNewBackup(&this->createNewBackupReactor->context, &(*this->createNewBackupReactor));
   this->createNewBackupReactor->nextWrite();
 }

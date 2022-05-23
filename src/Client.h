@@ -28,6 +28,7 @@ class Client
   const std::string userID;
   std::string lastBackupID = "";
   std::string lastLogID = "";
+  std::string deviceID = "0000";
 
   const std::function<void(const std::string &)> setLastBackupIDCallback = [this](const std::string &backupID)
   {

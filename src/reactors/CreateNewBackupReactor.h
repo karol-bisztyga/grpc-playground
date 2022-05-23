@@ -6,6 +6,8 @@
 /*
 SEND_USER_ID
 client => userID => server
+SEND_DEVICE_ID
+client => deviceID => server
 SEND_KEY_ENTROPY
 client => keyEntropy => server
 SEND_DATA_HASH
@@ -24,11 +26,13 @@ class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBac
   enum class State
   {
     USER_ID = 1,
-    KEY_ENTROPY = 2,
-    DATA_HASH = 3,
-    CHUNKS = 4,
+    DEVICE_ID = 2,
+    KEY_ENTROPY = 3,
+    DATA_HASH = 4,
+    CHUNKS = 5,
   };
   const std::string userID;
+  const std::string deviceID;
   const size_t chunkLimit;
   size_t currentChunk = 0;
   State state = State::USER_ID;
@@ -36,7 +40,7 @@ class CreateNewBackupReactor : public ClientBidiReactorBase<backup::CreateNewBac
   const std::function<void(const std::string &)> setLastBackupIDCallback;
 
 public:
-  CreateNewBackupReactor(const std::string &userID, size_t chunkLimit, const std::function<void(const std::string &)> &setLastBackupIDCallback) : userID(userID), chunkLimit(chunkLimit), setLastBackupIDCallback(setLastBackupIDCallback)
+  CreateNewBackupReactor(const std::string &userID, const std::string &deviceID, size_t chunkLimit, const std::function<void(const std::string &)> &setLastBackupIDCallback) : userID(userID), deviceID(deviceID), chunkLimit(chunkLimit), setLastBackupIDCallback(setLastBackupIDCallback)
   {
     std::cout << "create new backup init with chunks limit: " << chunkLimit << std::endl;
   }
@@ -52,6 +56,13 @@ public:
     if (this->state == State::USER_ID)
     {
       request.set_userid(this->userID);
+      this->state = State::DEVICE_ID;
+      return nullptr;
+    }
+    // send device id
+    if (this->state == State::DEVICE_ID)
+    {
+      request.set_deviceid(this->deviceID);
       this->state = State::KEY_ENTROPY;
       return nullptr;
     }
