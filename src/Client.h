@@ -3,7 +3,7 @@
 #include "SendLogReactor.h"
 #include "CreateNewBackupReactor.h"
 #include "PullBackupReactor.h"
-#include "AddAttachmentReactor.h"
+#include "AddAttachmentsReactor.h"
 #include "Tools.h"
 
 #include "../_generated/backup.pb.h"
@@ -46,13 +46,13 @@ public:
   std::unique_ptr<CreateNewBackupReactor> createNewBackupReactor;
   std::unique_ptr<SendLogReactor> sendLogReactor;
   std::unique_ptr<PullBackupReactor> pullBackupReactor;
-  std::unique_ptr<AddAttachmentReactor> addAttachmentReactor;
+  std::unique_ptr<AddAttachmentsReactor> addAttachmentsReactor;
 
   void createNewBackup();
   void sendLog();
   void recoverBackupKey();
   void pullBackup();
-  void addAttachment(bool isForLog);
+  void addAttachments(bool isForLog);
 
   bool reactorActive();
 

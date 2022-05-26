@@ -114,7 +114,7 @@ int main(int argc, char **argv)
       }
       case 'b':
       {
-        client->addAttachment(false);
+        client->addAttachments(false);
         break;
       }
       case 'l':
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
       }
       case 'k':
       {
-        client->addAttachment(true);
+        client->addAttachments(true);
         break;
       }
       case 'r':

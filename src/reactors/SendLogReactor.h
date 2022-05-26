@@ -67,8 +67,8 @@ public:
   void doneCallback() override {
     std::cout << "send log done: " << this->status.error_code() << "/" << this->status.error_message() << std::endl;
     if (this->status.ok()) {
-      std::cout << "send log successful - new log id is: " << this->response.logid() << std::endl;
-      this->setLasBackupIDCallback(this->response.logid());
+      std::cout << "send log successful - new log id is: " << this->response.logcheckpoint() << std::endl;
+      this->setLasBackupIDCallback(this->response.logcheckpoint());
     }
   }
 };

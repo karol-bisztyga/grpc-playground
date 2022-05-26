@@ -32,7 +32,7 @@ void Client::pullBackup() {
   this->pullBackupReactor->start();
 }
 
-void Client::addAttachment(bool isForLog)
+void Client::addAttachments(bool isForLog)
 {
   if (this->lastBackupID.empty())
   {
@@ -43,9 +43,22 @@ void Client::addAttachment(bool isForLog)
   if (isForLog) {
     logID = this->lastLogID;
   }
-  this->addAttachmentReactor.reset(new AddAttachmentReactor(this->userID, this->lastBackupID, logID, 1));
-  this->stub->async()->AddAttachment(&this->addAttachmentReactor->context, &this->addAttachmentReactor->response, &(*this->addAttachmentReactor));
-  this->addAttachmentReactor->nextWrite();
+  std::string holders;
+  std::cout << "adding attachments: " << std::endl;
+  for (size_t i = 0, l = randomNumber(2,5); i < l; ++i) {
+    std::string holder = randomString();
+    holders += holder;
+    holders += ATTACHMENT_DELIMITER;
+    std::cout << " - " << holder << std::endl;
+  }
+
+  this->addAttachmentsReactor.reset(new AddAttachmentsReactor());
+  this->addAttachmentsReactor->request.set_userid(this->userID);
+  this->addAttachmentsReactor->request.set_backupid(this->lastBackupID);
+  this->addAttachmentsReactor->request.set_logid(logID);
+  this->addAttachmentsReactor->request.set_holders(holders);
+  this->stub->async()->AddAttachments(&this->addAttachmentsReactor->context, &this->addAttachmentsReactor->request, &this->addAttachmentsReactor->response, &(*this->addAttachmentsReactor));
+  this->addAttachmentsReactor->StartCall();
 }
 
 bool Client::reactorActive()

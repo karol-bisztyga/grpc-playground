@@ -19,6 +19,8 @@
 const size_t GRPC_CHUNK_SIZE_LIMIT = 4 * 1024 * 1024;
 const size_t GRPC_METADATA_SIZE_PER_MESSAGE = 5;
 
+const std::string ATTACHMENT_DELIMITER = ";";
+
 int randomNumber(const int from, const int to);
 std::string randomString(size_t size = 20);
 std::string mockBytes(size_t size = 1024 * 1024);
