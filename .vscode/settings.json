@@ -87,6 +87,8 @@
     "utility": "cpp",
     "variant": "cpp",
     "vector": "cpp",
-    "__bits": "cpp"
+    "__bits": "cpp",
+    "compare": "cpp",
+    "concepts": "cpp"
   }
 }

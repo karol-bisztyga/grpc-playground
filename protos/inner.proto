@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package inner;
+
+service InnerService {
+  rpc TalkBetweenServices(stream TalkBetweenServicesRequest) returns (stream TalkBetweenServicesResponse) {}
+}
+
+// Put
+
+message TalkBetweenServicesRequest {
+  string msg = 1;
+}
+
+message TalkBetweenServicesResponse {
+  string msg = 1;
+}

@@ -14,7 +14,7 @@ fi
 echo "building target: $TARGET"
 
 cd cmake/build
-cmake ../..
+cmake -DOPENSSL_ROOT_DIR=/opt/homebrew/Cellar/openssl@3/3.0.5 ../..
 cmake --build . --target ${TARGET}
 
 cd ../..

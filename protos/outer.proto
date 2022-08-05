@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package outer;
+
+service OuterService {
+  rpc TalkWithClient(stream TalkWithClientRequest) returns (stream TalkWithClientResponse) {}
+}
+
+// CreateNewBackup
+
+message TalkWithClientRequest {
+  string msg = 1;
+}
+
+message TalkWithClientResponse {
+  string msg = 1;
+}

@@ -10,20 +10,6 @@ endif(COMMAND cmake_policy)
 
 set (CMAKE_CXX_STANDARD 17)
 
-#include(./common.cmake)
-
-# FIND LIBS
-set(protobuf_MODULE_COMPATIBLE TRUE)
-find_package(Protobuf CONFIG REQUIRED)
-message(STATUS "Using protobuf ${Protobuf_VERSION}")
-
-set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
-if(CMAKE_CROSSCOMPILING)
-  find_program(_PROTOBUF_PROTOC protoc)
-else()
-  set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
-endif()
-
 # Find gRPC installation
 # Looks for gRPCConfig.cmake file installed by gRPC's cmake installation.
 find_package(gRPC CONFIG REQUIRED)
@@ -43,11 +29,13 @@ get_filename_component(hw_proto "./protos/helloworld.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 file(GLOB GENERATED_CODE "./cmake/build/_generated/*.cc")
-file(GLOB SOURCE_CODE "./src/*.cpp")
+file(GLOB CLIENT_SOURCE_CODE "./src/client/*.cpp")
+file(GLOB INNER_SERVER_SOURCE_CODE "./src/inner_server/*.cpp")
+file(GLOB OUTER_SERVER_SOURCE_CODE "./src/outer_server/*.cpp")
 
 include_directories(
   ./src
-  ./src/reactors
+  ./src/lib
   ./cmake/build/_generated
 )
 
@@ -56,6 +44,7 @@ add_executable(
   client
 
   ${GENERATED_CODE}
+  ./src/client.cpp
   ${SOURCE_CODE}
 )
 
@@ -63,11 +52,52 @@ target_link_libraries(
   client
   
   ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF}
   OpenSSL::SSL
 )
 
 install(
   TARGETS client
+  RUNTIME DESTINATION bin/
+)
+
+# INNER SERVER
+add_executable(
+  inner_server
+
+  ${GENERATED_CODE}
+  ./src/inner_server.cpp
+  ${INNER_SERVER_SOURCE_CODE}
+)
+
+target_link_libraries(
+  inner_server
+  
+  ${_GRPC_GRPCPP}
+  OpenSSL::SSL
+)
+
+install(
+  TARGETS inner_server
+  RUNTIME DESTINATION bin/
+)
+
+# OUTER SERVER
+add_executable(
+  outer_server
+
+  ${GENERATED_CODE}
+  ./src/outer_server.cpp
+  ${OUTER_SERVER_SOURCE_CODE}
+)
+
+target_link_libraries(
+  outer_server
+  
+  ${_GRPC_GRPCPP}
+  OpenSSL::SSL
+)
+
+install(
+  TARGETS outer_server
   RUNTIME DESTINATION bin/
 )

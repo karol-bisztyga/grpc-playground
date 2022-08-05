@@ -11,13 +11,6 @@
 
 int main(int argc, char **argv)
 {
-  std::string targetStr = "localhost:50053";
-  ;
-  auto channel = grpc::CreateChannel(
-      targetStr,
-      grpc::InsecureChannelCredentials());
-  std::cout << "client start on: " << targetStr << std::endl;
-
   try
   {
   }
