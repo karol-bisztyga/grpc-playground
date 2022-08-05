@@ -17,8 +17,9 @@ class ClientTalkReactor : public ClientBidiReactorBase<
 {
   std::vector<std::string> messages;
   size_t currentIndex = 0;
+  const int id;
 public:
-  ClientTalkReactor(std::vector<std::string> messages) : messages(messages) {}
+  ClientTalkReactor(int id, std::vector<std::string> messages) : messages(messages), id(id) {}
 
   std::unique_ptr<grpc::Status> prepareRequest(outer::TalkWithClientRequest &request, std::shared_ptr<outer::TalkWithClientResponse> previousResponse) override
   {
@@ -27,5 +28,9 @@ public:
     }
     request.set_msg(this->messages[this->currentIndex++]);
     return nullptr;
+  }
+
+  void doneCallback() override {
+    std::cout << "client DONE [id: " << this->id << "]" << std::endl;
   }
 };

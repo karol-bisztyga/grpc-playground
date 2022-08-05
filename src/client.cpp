@@ -26,7 +26,7 @@ int main(int argc, char **argv)
   std::vector<std::thread> threads;
   std::vector<ClientWrapper> clients;
   for (int i=0; i<numberOfThreads; ++i) {
-    clients.push_back(ClientWrapper(channel));
+    clients.push_back(ClientWrapper(i, channel));
   }
 
   for (int i=0; i<numberOfThreads; ++i) {
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
       int numberOfMessages = randomNumber(5,15);
       std::vector<std::string> messages;
       for (int i=0; i<numberOfMessages; ++i) {
-        messages.push_back(randomString());
+        messages.push_back(randomString(20+i));
       }
       clients[i].talk(messages);
     }));

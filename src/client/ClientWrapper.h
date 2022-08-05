@@ -15,10 +15,12 @@ class ClientWrapper
 {
   std::unique_ptr<ClientTalkReactor> reactor;
   std::unique_ptr<outer::OuterService::Stub> stub;
+  const int id;
 public:
-  ClientWrapper(std::shared_ptr<grpc::Channel> channel): stub(outer::OuterService::NewStub(channel)) {}
+  ClientWrapper(int id, std::shared_ptr<grpc::Channel> channel): stub(outer::OuterService::NewStub(channel)), id(id) {}
+  
   void talk(std::vector<std::string> messages) {
-    this->reactor.reset(new ClientTalkReactor(messages));
+    this->reactor.reset(new ClientTalkReactor(id, messages));
     this->stub->async()->TalkWithClient(&this->reactor->context, &(*this->reactor));
     this->reactor->start();
   }
