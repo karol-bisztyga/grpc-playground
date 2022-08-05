@@ -28,26 +28,15 @@ public:
   }
 
   std::thread talk(TalkBetweenServicesReactor &talkReactor) {
-    std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
-              << "]"
-              << "[ServiceClient::talk] etner" << std::endl;
     if (!talkReactor.initialized) {
       throw std::runtime_error(
           "talk reactor is being used but has not been initialized");
     }
     std::thread th([this, &talkReactor]() {
-      std::cout << "["
-                << std::hash<std::thread::id>{}(std::this_thread::get_id())
-                << "]"
-                << "[ServiceClient::talk::lambda] startING" << std::endl;
       inner::InnerService::NewStub(this->channel)
           ->async() // this runs on the same thread, why??
           ->TalkBetweenServices(&talkReactor.context, &talkReactor);
       talkReactor.start();
-      std::cout << "["
-                << std::hash<std::thread::id>{}(std::this_thread::get_id())
-                << "]"
-                << "[ServiceClient::talk::lambda] startED" << std::endl;
     });
     return th;
   }
