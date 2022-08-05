@@ -3,6 +3,7 @@
 #include "BaseReactor.h"
 
 #include <grpcpp/grpcpp.h>
+
 #include <iostream>
 
 // This is how this type of reactor works:

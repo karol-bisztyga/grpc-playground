@@ -16,7 +16,7 @@ class ServiceClient {
   std::shared_ptr<grpc::Channel> channel;
 
   ServiceClient() {
-    std::string targetStr = "blob-server:50051";
+    std::string targetStr = "localhost:50051";
     this->channel =
         grpc::CreateChannel(targetStr, grpc::InsecureChannelCredentials());
   }

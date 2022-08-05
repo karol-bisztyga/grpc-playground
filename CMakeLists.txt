@@ -29,6 +29,7 @@ get_filename_component(hw_proto "./protos/helloworld.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 file(GLOB GENERATED_CODE "./cmake/build/_generated/*.cc")
+file(GLOB MUTUAL_SOURCE_CODE "./src/lib/*.cpp")
 file(GLOB CLIENT_SOURCE_CODE "./src/client/*.cpp")
 file(GLOB INNER_SERVER_SOURCE_CODE "./src/inner_server/*.cpp")
 file(GLOB OUTER_SERVER_SOURCE_CODE "./src/outer_server/*.cpp")
@@ -36,6 +37,7 @@ file(GLOB OUTER_SERVER_SOURCE_CODE "./src/outer_server/*.cpp")
 include_directories(
   ./src
   ./src/lib
+  ./src/client
   ./src/lib/client-base-reactors
   ./src/lib/server-base-reactors
   ./src/inner_server
@@ -49,6 +51,7 @@ add_executable(
 
   ${GENERATED_CODE}
   ./src/client.cpp
+  ${MUTUAL_SOURCE_CODE}
   ${SOURCE_CODE}
 )
 
@@ -70,6 +73,7 @@ add_executable(
 
   ${GENERATED_CODE}
   ./src/inner_server.cpp
+  ${MUTUAL_SOURCE_CODE}
   ${INNER_SERVER_SOURCE_CODE}
 )
 
@@ -91,6 +95,7 @@ add_executable(
 
   ${GENERATED_CODE}
   ./src/outer_server.cpp
+  ${MUTUAL_SOURCE_CODE}
   ${OUTER_SERVER_SOURCE_CODE}
 )
 
