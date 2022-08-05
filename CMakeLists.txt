@@ -36,6 +36,10 @@ file(GLOB OUTER_SERVER_SOURCE_CODE "./src/outer_server/*.cpp")
 include_directories(
   ./src
   ./src/lib
+  ./src/lib/client-base-reactors
+  ./src/lib/server-base-reactors
+  ./src/inner_server
+  ./src/outer_server
   ./cmake/build/_generated
 )
 

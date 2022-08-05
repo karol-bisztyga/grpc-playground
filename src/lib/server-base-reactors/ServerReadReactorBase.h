@@ -9,10 +9,6 @@
 #include <memory>
 #include <string>
 
-namespace comm {
-namespace network {
-namespace reactor {
-
 // This is how this type of reactor works:
 // - read N requests from the client
 // - write a final response to the client (may be empty)
@@ -114,7 +110,3 @@ std::shared_ptr<ReactorStatusHolder>
 ServerReadReactorBase<Request, Response>::getStatusHolder() {
   return this->statusHolder;
 }
-
-} // namespace reactor
-} // namespace network
-} // namespace comm

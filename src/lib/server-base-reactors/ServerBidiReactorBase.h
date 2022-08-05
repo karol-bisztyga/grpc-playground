@@ -9,10 +9,6 @@
 #include <string>
 #include <thread>
 
-namespace comm {
-namespace network {
-namespace reactor {
-
 struct ServerBidiReactorStatus {
   grpc::Status status;
   bool sendLastResponse;
@@ -167,7 +163,3 @@ std::shared_ptr<ReactorStatusHolder>
 ServerBidiReactorBase<Request, Response>::getStatusHolder() {
   return this->statusHolder;
 }
-
-} // namespace reactor
-} // namespace network
-} // namespace comm

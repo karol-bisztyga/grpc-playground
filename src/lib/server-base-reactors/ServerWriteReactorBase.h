@@ -9,10 +9,6 @@
 #include <memory>
 #include <string>
 
-namespace comm {
-namespace network {
-namespace reactor {
-
 // This is how this type of reactor works:
 // - read a request from the client
 // - write N responses to the client
@@ -137,7 +133,3 @@ void ServerWriteReactorBase<Request, Response>::OnWriteDone(bool ok) {
   }
   this->nextWrite();
 }
-
-} // namespace reactor
-} // namespace network
-} // namespace comm

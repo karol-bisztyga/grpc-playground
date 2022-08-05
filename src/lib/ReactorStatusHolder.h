@@ -5,10 +5,6 @@
 #include <atomic>
 #include <mutex>
 
-namespace comm {
-namespace network {
-namespace reactor {
-
 enum class ReactorState {
   NONE = 0,
   RUNNING = 1,
@@ -33,7 +29,3 @@ public:
     this->status = status;
   }
 };
-
-} // namespace reactor
-} // namespace network
-} // namespace comm

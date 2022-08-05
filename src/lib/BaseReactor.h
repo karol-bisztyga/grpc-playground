@@ -6,10 +6,6 @@
 
 #include <memory>
 
-namespace comm {
-namespace network {
-namespace reactor {
-
 class BaseReactor {
 public:
   // Returns a status holder that consists of:
@@ -28,7 +24,3 @@ public:
   // Should be called when `terminate` is called.
   virtual void terminateCallback() = 0;
 };
-
-} // namespace reactor
-} // namespace network
-} // namespace comm

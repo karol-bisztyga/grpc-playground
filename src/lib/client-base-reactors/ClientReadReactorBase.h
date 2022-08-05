@@ -5,10 +5,6 @@
 #include <grpcpp/grpcpp.h>
 #include <iostream>
 
-namespace comm {
-namespace network {
-namespace reactor {
-
 // This is how this type of reactor works:
 // - send a request to the server
 // - read N responses from the server
@@ -115,7 +111,3 @@ std::shared_ptr<ReactorStatusHolder>
 ClientReadReactorBase<Request, Response>::getStatusHolder() {
   return this->statusHolder;
 }
-
-} // namespace reactor
-} // namespace network
-} // namespace comm
