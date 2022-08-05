@@ -1,4 +1,5 @@
 #include "Tools.h"
+#include "Constants.h"
 
 #include <grpcpp/grpcpp.h>
 
@@ -11,12 +12,11 @@
 
 int main(int argc, char **argv)
 {
-  std::string targetStr = "localhost:50053";
-  ;
+  std::string targetAddr = LISTEN_ADDRESS + ":" + OUTER_SERVER_PORT;
   auto channel = grpc::CreateChannel(
       targetStr,
       grpc::InsecureChannelCredentials());
-  std::cout << "client start on: " << targetStr << std::endl;
+  std::cout << "client start on: " << targetAddr << std::endl;
 
   try
   {

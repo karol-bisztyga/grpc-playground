@@ -9,7 +9,7 @@
 #include <thread>
 
 void RunServer() {
-  InnerServiceImpl innerService;
+  InnerServiceImpl service;
 
   std::string addr = LISTEN_ADDRESS + ":" + INNER_SERVER_PORT;
 
@@ -17,7 +17,7 @@ void RunServer() {
   grpc::ServerBuilder builder;
   builder.AddListeningPort(
       addr, grpc::InsecureServerCredentials());
-  builder.RegisterService(&innerService);
+  builder.RegisterService(&service);
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
   std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
             << "]"
