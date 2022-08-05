@@ -19,21 +19,32 @@ int main(int argc, char **argv)
       targetAddr,
       grpc::InsecureChannelCredentials());
   std::cout << "client start on: " << targetAddr << std::endl;
-  ClientWrapper client(channel);
 
-  try
-  {
-    int numberOfMessages = randomNumber(5,15);
-    std::vector<std::string> messages;
-    for (int i=0; i<numberOfMessages; ++i) {
-      messages.push_back(randomString());
-    }
-    client.talk(messages);
+  int numberOfThreads = std::stoi(std::string(argv[1]));
+  std::cout << "client threads: " << numberOfThreads << std::endl;
+
+  std::vector<std::thread> threads;
+  std::vector<ClientWrapper> clients;
+  for (int i=0; i<numberOfThreads; ++i) {
+    clients.push_back(ClientWrapper(channel));
   }
-  catch (std::runtime_error &e)
-  {
-    std::cout << "error: " << e.what() << std::endl;
+
+  for (int i=0; i<numberOfThreads; ++i) {
+    threads.push_back(std::thread([i, &clients](){
+      std::cout << "starting client thread " << i << std::endl;
+      int numberOfMessages = randomNumber(5,15);
+      std::vector<std::string> messages;
+      for (int i=0; i<numberOfMessages; ++i) {
+        messages.push_back(randomString());
+      }
+      clients[i].talk(messages);
+    }));
   }
+
+  for (auto &thread : threads) {
+    thread.join();
+  }
+
 
   std::cout << "press enter to terminate" << std::endl;
   std::cin.ignore();
