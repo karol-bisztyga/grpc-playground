@@ -6,8 +6,6 @@ service OuterService {
   rpc TalkWithClient(stream TalkWithClientRequest) returns (stream TalkWithClientResponse) {}
 }
 
-// CreateNewBackup
-
 message TalkWithClientRequest {
   string msg = 1;
 }

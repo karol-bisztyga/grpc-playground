@@ -21,11 +21,8 @@ class TalkWithClientReactor : public ServerBidiReactorBase<
   std::mutex reactorStateMutex;
   std::thread clientThread;
 
-  std::condition_variable blobPutDoneCV;
-  std::mutex blobPutDoneCVMutex;
-
-  std::string generateBackupID();
-
+  std::condition_variable putDoneCV;
+  std::mutex putDoneCVMutex;
 public:
   std::unique_ptr<ServerBidiReactorStatus> handleRequest(
       outer::TalkWithClientRequest request,
@@ -33,7 +30,7 @@ public:
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
               << "[TalkWithClientReactor::handleRequest]" << std::endl;
-    // we make sure that the blob client's state is flushed to the main memory
+    // we make sure that the client's state is flushed to the main memory
     // as there may be multiple threads from the pool taking over here
     const std::lock_guard<std::mutex> lock(this->reactorStateMutex);
     std::string msg = request.msg();
@@ -48,7 +45,7 @@ public:
           << "[TalkWithClientReactor::handleRequest] initializING talk reactor"
           << std::endl;
       this->talkReactor =
-          TalkBetweenServicesReactor(&this->blobPutDoneCV);
+          TalkBetweenServicesReactor(&this->putDoneCV);
       std::cout << "["
                 << std::hash<std::thread::id>{}(std::this_thread::get_id())
                 << "]"
@@ -84,12 +81,12 @@ public:
       return;
     }
     this->talkReactor.scheduleMessage(std::make_unique<std::string>(""));
-    std::unique_lock<std::mutex> lock2(this->blobPutDoneCVMutex);
+    std::unique_lock<std::mutex> lock2(this->putDoneCVMutex);
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
               << "[TalkWithClientReactor::terminateCallback] waitING"
               << std::endl;
-    this->blobPutDoneCV.wait(lock2);
+    this->putDoneCV.wait(lock2);
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
               << "[TalkWithClientReactor::terminateCallback] waitED"
