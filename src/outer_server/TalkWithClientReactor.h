@@ -12,19 +12,25 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <chrono>
 
 class TalkWithClientReactor : public ServerBidiReactorBase<
                                   outer::TalkWithClientRequest,
                                   outer::TalkWithClientResponse> {
-  TalkBetweenServicesReactor talkReactor;
+  std::shared_ptr<TalkBetweenServicesReactor> talkReactor;
+
+  ThreadSafeQueue<std::shared_ptr<TalkBetweenServicesReactor>> *reactorsQueue;
 
   std::mutex reactorStateMutex;
   std::thread clientThread;
+
+  // bool clientInitialized = false;
 
   bool putDoneCVReady = false;
   std::condition_variable putDoneCV;
   std::mutex putDoneCVMutex;
 public:
+  TalkWithClientReactor(ThreadSafeQueue<std::shared_ptr<TalkBetweenServicesReactor>> *reactorsQueue) : reactorsQueue(reactorsQueue) {}
   std::unique_ptr<ServerBidiReactorStatus> handleRequest(
       outer::TalkWithClientRequest request,
       outer::TalkWithClientResponse *response) override {
@@ -39,34 +45,39 @@ public:
               << "]"
               << "[TalkWithClientReactor::handleRequest] msg " << msg.size()
               << std::endl;
-    if (!this->talkReactor.initialized) {
+    if (this->talkReactor == nullptr) {
       std::cout
           << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
           << "]"
           << "[TalkWithClientReactor::handleRequest] initializING talk reactor"
           << std::endl;
       this->talkReactor =
-          TalkBetweenServicesReactor(&this->putDoneCV,
+          std::make_shared<TalkBetweenServicesReactor>(&this->putDoneCV,
           &this->putDoneCVReady, &this->putDoneCVMutex);
-      std::cout << "["
-                << std::hash<std::thread::id>{}(std::this_thread::get_id())
-                << "]"
-                << "[TalkWithClientReactor::handleRequest] initializING talk "
-                   "reactor2"
-                << std::endl;
-      this->clientThread =
-          ServiceClient::getInstance().talk(this->talkReactor);
+      // std::cout << "["
+      //           << std::hash<std::thread::id>{}(std::this_thread::get_id())
+      //           << "]"
+      //           << "[TalkWithClientReactor::handleRequest] initializING talk "
+      //              "reactor2"
+      //           << std::endl;
+      // this->clientThread =
+      //     ServiceClient::getInstance().talk(this->talkReactor);
+      reactorsQueue->enqueue(talkReactor);
+      
+      std::this_thread::sleep_for(std::chrono::milliseconds(800));
+
       std::cout
           << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
           << "]"
           << "[TalkWithClientReactor::handleRequest] initializED talk reactor"
           << std::endl;
+      // this->clientInitialized = true;
     }
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
               << "[TalkWithClientReactor::handleRequest] schedulING msg "
               << msg.size() << std::endl;
-    this->talkReactor.scheduleMessage(std::make_unique<std::string>(msg));
+    this->talkReactor->scheduleMessage(std::make_unique<std::string>(msg));
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
               << "[TalkWithClientReactor::handleRequest] schedulED msg "
@@ -79,10 +90,10 @@ public:
               << "]"
               << "[TalkWithClientReactor::terminateCallback]" << std::endl;
     const std::lock_guard<std::mutex> lock(this->reactorStateMutex);
-    if (!this->talkReactor.initialized) {
+    if (!this->talkReactor->initialized) {
       return;
     }
-    this->talkReactor.scheduleMessage(std::make_unique<std::string>(""));
+    this->talkReactor->scheduleMessage(std::make_unique<std::string>(""));
     std::unique_lock<std::mutex> lock2(this->putDoneCVMutex);
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
@@ -93,9 +104,9 @@ public:
               << "]"
               << "[TalkWithClientReactor::terminateCallback] waitED"
               << std::endl;
-    if (!this->talkReactor.getStatusHolder()->getStatus().ok()) {
+    if (!this->talkReactor->getStatusHolder()->getStatus().ok()) {
       throw std::runtime_error(
-          this->talkReactor.getStatusHolder()->getStatus().error_message());
+          this->talkReactor->getStatusHolder()->getStatus().error_message());
     }
     this->clientThread.join();
   }
