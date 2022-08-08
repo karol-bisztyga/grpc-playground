@@ -22,6 +22,7 @@ class TalkWithClientReactor : public ServerBidiReactorBase<
   std::thread clientThread;
   std::vector<std::thread> ths;
 
+  bool clientReady = false;
   std::condition_variable putDoneCV;
   std::mutex putDoneCVMutex;
 public:
@@ -54,7 +55,7 @@ public:
                    "reactor2"
                 << std::endl;
       this->clientThread =
-          ServiceClient::getInstance().talk(this->talkReactor, this->ths);
+          ServiceClient::getInstance().talk(this->talkReactor, this->ths, clientReady, putDoneCVMutex);
       std::cout
           << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
           << "]"
@@ -87,7 +88,7 @@ public:
               << "]"
               << "[TalkWithClientReactor::terminateCallback] waitING"
               << std::endl;
-    this->putDoneCV.wait(lock2);
+    this->putDoneCV.wait(lock2, [this]{return this->clientReady;});
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
               << "[TalkWithClientReactor::terminateCallback] waitED"

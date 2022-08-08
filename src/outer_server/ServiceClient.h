@@ -28,15 +28,15 @@ public:
     return instance;
   }
 
-  std::thread talk(TalkBetweenServicesReactor &talkReactor, std::vector<std::thread> &ths) {
+  std::thread talk(TalkBetweenServicesReactor &talkReactor, std::vector<std::thread> &ths, bool &clientReady, std::mutex &mtx) {
     std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
               << "]"
-              << "[ServiceClient::talk] etner" << std::endl;
+              << "[ServiceClient::talk] enter" << std::endl;
     if (!talkReactor.initialized) {
       throw std::runtime_error(
           "talk reactor is being used but has not been initialized");
     }
-    std::thread th([this, &talkReactor, &ths]() {
+    std::thread th([this, &talkReactor, &ths, &mtx, &clientReady]() {
       std::cout << "["
                 << std::hash<std::thread::id>{}(std::this_thread::get_id())
                 << "]"
@@ -54,10 +54,22 @@ public:
         if (msg.empty()) {
           break;
         }
-        std::thread ith([&msg](){
-          std::this_thread::sleep_for(std::chrono::milliseconds(40*msg.size()));
+        std::thread ith([msg](){
+          std::cout << "["
+                  << std::hash<std::thread::id>{}(std::this_thread::get_id())
+                  << "]"
+                  << "[ServiceClient::talk::lambda] internal begin " << msg.size() << std::endl;
+          std::this_thread::sleep_for(std::chrono::milliseconds(100*msg.size()));
+          std::cout << "["
+                  << std::hash<std::thread::id>{}(std::this_thread::get_id())
+                  << "]"
+                  << "[ServiceClient::talk::lambda] internal end " << msg.size() << std::endl;
         });
         ths.push_back(std::move(ith));
+      }
+      {
+        std::unique_lock<std::mutex> lock(mtx);
+        clientReady = true;
       }
       talkReactor.terminationNotifier->notify_one();
       std::cout << "["
