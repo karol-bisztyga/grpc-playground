@@ -39,5 +39,9 @@ std::unique_ptr<grpc::Status> TalkBetweenServicesReactor::prepareRequest(
 }
 
 void TalkBetweenServicesReactor::doneCallback() {
+  {
+    const std::lock_guard<std::mutex> lock(*this->putDoneCVMutex);
+    *this->putDoneCVReady = true;
+  }
   this->terminationNotifier->notify_one();
 }

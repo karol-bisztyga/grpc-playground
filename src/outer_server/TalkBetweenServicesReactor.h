@@ -21,12 +21,14 @@ class TalkBetweenServicesReactor : public ClientBidiReactorBase<
 public:
   std::condition_variable *terminationNotifier;
   bool initialized;
+  bool *putDoneCVReady;
+  std::mutex *putDoneCVMutex;
 
   TalkBetweenServicesReactor() : initialized(false) {
   }
 
-  TalkBetweenServicesReactor(std::condition_variable *terminationNotifier)
-      : terminationNotifier(terminationNotifier), initialized(true) {
+  TalkBetweenServicesReactor(std::condition_variable *terminationNotifier, bool *putDoneCVReady, std::mutex *putDoneCVMutex)
+      : terminationNotifier(terminationNotifier), initialized(true), putDoneCVReady(putDoneCVReady), putDoneCVMutex(putDoneCVMutex) {
   }
 
   TalkBetweenServicesReactor
@@ -35,11 +37,15 @@ public:
       return *this;
     }
     this->terminationNotifier = other.terminationNotifier;
+    this->putDoneCVReady = other.putDoneCVReady;
+    this->putDoneCVMutex = other.putDoneCVMutex;
     this->initialized = true;
     return *this;
   }
   TalkBetweenServicesReactor(const TalkBetweenServicesReactor &other) {
     this->terminationNotifier = other.terminationNotifier;
+    this->putDoneCVReady = other.putDoneCVReady;
+    this->putDoneCVMutex = other.putDoneCVMutex;
     this->initialized = true;
   }
 
