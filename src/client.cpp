@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv)
 {
-  std::string targetAddr = LISTEN_ADDRESS + ":" + OUTER_SERVER_PORT;
+  std::string targetAddr = LISTEN_ADDRESS + ":" + INNER_SERVER_PORT;
   auto channel = grpc::CreateChannel(
       targetAddr,
       grpc::InsecureChannelCredentials());
