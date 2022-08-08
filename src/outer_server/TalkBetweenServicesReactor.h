@@ -16,9 +16,8 @@
 class TalkBetweenServicesReactor : public ClientBidiReactorBase<
                                        inner::TalkBetweenServicesRequest,
                                        inner::TalkBetweenServicesResponse> {
-  ThreadSafeQueue<std::string> messages;
-
 public:
+  ThreadSafeQueue<std::string> messages;
   std::condition_variable *terminationNotifier;
   bool initialized;
 

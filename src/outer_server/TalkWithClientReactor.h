@@ -20,6 +20,7 @@ class TalkWithClientReactor : public ServerBidiReactorBase<
 
   std::mutex reactorStateMutex;
   std::thread clientThread;
+  std::vector<std::thread> ths;
 
   std::condition_variable putDoneCV;
   std::mutex putDoneCVMutex;
@@ -53,7 +54,7 @@ public:
                    "reactor2"
                 << std::endl;
       this->clientThread =
-          ServiceClient::getInstance().talk(this->talkReactor);
+          ServiceClient::getInstance().talk(this->talkReactor, this->ths);
       std::cout
           << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
           << "]"
@@ -95,6 +96,21 @@ public:
       throw std::runtime_error(
           this->talkReactor.getStatusHolder()->getStatus().error_message());
     }
+    std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
+              << "]"
+              << "[TalkWithClientReactor::terminateCallback] joinING"
+              << std::endl;
     this->clientThread.join();
+    std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
+              << "]"
+              << "[TalkWithClientReactor::terminateCallback] joinING 2"
+              << std::endl;
+    for (auto &th : this->ths) {
+      th.join();
+    }
+    std::cout << "[" << std::hash<std::thread::id>{}(std::this_thread::get_id())
+              << "]"
+              << "[TalkWithClientReactor::terminateCallback] joinED"
+              << std::endl;
   }
 };
