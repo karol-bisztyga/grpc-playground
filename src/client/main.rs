@@ -9,23 +9,28 @@ mod constants;
 
 use tonic::Request;
 
-use constants::OUTER_SERVER_ADDR;
+use constants::{CLIENT_HOSTNAME, OUTER_SERVER_PORT};
 
 pub use proto::outer_service_client::OuterServiceClient;
 pub use proto::outer_service_server::OuterServiceServer;
 
 use proto::TalkWithClientRequest;
+use rand::Rng;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   const N_MESSAGES: usize = 10;
+  let address = format!("{}:{}", CLIENT_HOSTNAME, OUTER_SERVER_PORT);
   let mut rng = rand::thread_rng();
+  println!("initializing the client {}", address);
   let mut client: OuterServiceClient<tonic::transport::Channel> =
-    OuterServiceClient::connect(OUTER_SERVER_ADDR).await?;
+    OuterServiceClient::connect(address).await?;
   
+  println!("generating {} messages", N_MESSAGES);
   let mut messages = vec![];
   for _ in 0..N_MESSAGES {
-    messages.push(Alphanumeric.sample_string(&mut rng, 64));
+    let size = rng.gen_range(40..70);
+    messages.push(Alphanumeric.sample_string(&mut rng, size));
   }
 
   let outbound = async_stream::stream! {

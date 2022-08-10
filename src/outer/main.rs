@@ -6,14 +6,15 @@ mod service;
 
 use service::{MyOuterService, OuterServiceServer};
 
-use constants::OUTER_SERVER_ADDR;
+use constants::{SERVER_HOSTNAME, OUTER_SERVER_PORT};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let server = MyOuterService {};
+  let address = format!("{}:{}", SERVER_HOSTNAME, OUTER_SERVER_PORT);
   Server::builder()
     .add_service(OuterServiceServer::new(server))
-    .serve(OUTER_SERVER_ADDR.parse()?)
+    .serve(address.parse()?)
     .await
     .unwrap();
 
