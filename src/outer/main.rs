@@ -1,5 +1,6 @@
 use tonic::transport::Server;
 
+#[path = "../constants.rs"]
 mod constants;
 mod service;
 
