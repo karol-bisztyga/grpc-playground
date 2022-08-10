@@ -201,11 +201,13 @@ dependencies = [
 name = "grpc-playground"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "derive_more",
  "futures",
  "futures-core",
  "h2",
  "prost",
+ "rand",
  "tokio",
  "tokio-stream",
  "tonic",
