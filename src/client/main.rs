@@ -2,53 +2,56 @@ mod proto {
   tonic::include_proto!("outer");
 }
 
-use rand::distributions::{Alphanumeric, DistString};
-
 #[path = "../constants.rs"]
 mod constants;
 
-use tonic::Request;
-
-use constants::{CLIENT_HOSTNAME, OUTER_SERVER_PORT};
-
 pub use proto::outer_service_client::OuterServiceClient;
 pub use proto::outer_service_server::OuterServiceServer;
+use tokio::runtime::Runtime;
 
-use proto::TalkWithClientRequest;
+use rand::distributions::{Alphanumeric, DistString};
 use rand::Rng;
+
+mod client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-  const N_MESSAGES: usize = 10;
-  let address = format!("{}:{}", CLIENT_HOSTNAME, OUTER_SERVER_PORT);
+  const N_CLIENTS: usize = 5;
+  println!("starting {} clients", N_CLIENTS);
+
+  let mut data = vec![];
   let mut rng = rand::thread_rng();
-  println!("initializing the client {}", address);
-  let mut client: OuterServiceClient<tonic::transport::Channel> =
-    OuterServiceClient::connect(address).await?;
-  
-  println!("generating {} messages", N_MESSAGES);
-  let mut messages = vec![];
-  for _ in 0..N_MESSAGES {
-    let size = rng.gen_range(40..70);
-    messages.push(Alphanumeric.sample_string(&mut rng, size));
-  }
 
-  let outbound = async_stream::stream! {
-    println!("client sending {} messages", N_MESSAGES);
-    for msg in messages {
-      println!("- sending message: {}", msg);
-      let request = TalkWithClientRequest {
-        msg: msg,
-      };
-      yield request;
+  for i in 0..N_CLIENTS {
+    let n_messages = rng.gen_range(5..12);
+    println!("generating {} messages for client {}", n_messages, i);
+    let mut messages = vec![];
+    for _ in 0..n_messages {
+      let size = rng.gen_range(40..70);
+      messages.push(Alphanumeric.sample_string(&mut rng, size));
     }
-  };
-
-  let response = client.talk_with_client(Request::new(outbound)).await?;
-  let mut inbound = response.into_inner();
-  while let Some(response) = inbound.message().await? {
-    println!("got response: {}", response.msg);
+    data.push(messages);
   }
+
+  let rt = Runtime::new().unwrap();
+  tokio::task::spawn_blocking(move || {
+    rt.block_on(async {
+      let mut handlers = vec![];
+      for (i, item) in data.iter().enumerate() {
+        println!("running client number {}", i);
+        let item_cloned = item.clone();
+        handlers.push(tokio::spawn(async move {
+          client::execute(i, &item_cloned).await.unwrap();
+        }));
+      }
+
+      for handler in handlers {
+        handler.await.unwrap();
+      }
+    });
+  })
+  .await
+  .expect("Task panicked");
 
   Ok(())
 }

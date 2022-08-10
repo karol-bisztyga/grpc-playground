@@ -70,7 +70,11 @@ impl OuterService for MyOuterService {
           Ok(request) => {
             println!("received msg: {}", request.msg);
             let size = request.msg.len();
-            let response = format!("got message: {}..., size {}", request.msg.chars().take(5).collect::<String>(), size);
+            let response = format!(
+              "response to message: {}..., size {}",
+              request.msg.chars().take(5).collect::<String>(),
+              size
+            );
             tx.send(Ok(TalkWithClientResponse { msg: response }))
               .await
               .expect("working rx")

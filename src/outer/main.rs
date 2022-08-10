@@ -6,7 +6,7 @@ mod service;
 
 use service::{MyOuterService, OuterServiceServer};
 
-use constants::{SERVER_HOSTNAME, OUTER_SERVER_PORT};
+use constants::{OUTER_SERVER_PORT, SERVER_HOSTNAME};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
