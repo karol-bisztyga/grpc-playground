@@ -24,9 +24,7 @@ type ResponseStream =
   Pin<Box<dyn Stream<Item = Result<TalkWithClientResponse, Status>> + Send>>;
 
 #[derive(Debug)]
-pub struct MyOuterService {
-  // pub inner_client: Option<InnerClient>,
-}
+pub struct MyOuterService {}
 
 #[tonic::async_trait]
 impl OuterService for MyOuterService {
@@ -36,32 +34,26 @@ impl OuterService for MyOuterService {
     &self,
     req: Request<Streaming<TalkWithClientRequest>>,
   ) -> TalkWithClientResult<ResponseStream> {
-    println!("talk with client start");
+    println!("[outer server] talk with client start");
 
     let mut in_stream = req.into_inner();
     let (server_sender, server_receiver) =
       mpsc::channel(MPSC_CHANNEL_BUFFER_CAPACITY);
 
-    // this spawn here is required if you want to handle connection error.
-    // If we just map `in_stream` and write it back as `out_stream` the `out_stream`
-    // will be drooped when connection error occurs and error will never be propagated
-    // to mapped version of `in_stream`.
     tokio::spawn(async move {
       let inner_client = InnerClient {};
-      let sender = inner_client.execute().await.unwrap();
+      let client_sender = inner_client.execute().await.unwrap();
       while let Some(request_result) = in_stream.next().await {
         match request_result {
           Ok(request) => {
-            println!("received msg: {}", request.msg);
-            println!("passing to the inner server");
-            sender.send(request.msg).await.unwrap();
+            println!("[outer server] received msg: {}", request.msg);
+            println!("[outer server] passing to the inner server");
+            client_sender.send(request.msg).await.unwrap();
           }
           Err(err) => {
             if let Some(io_err) = match_for_io_error(&err) {
               if io_err.kind() == ErrorKind::BrokenPipe {
-                // here you can handle special case when client
-                // disconnected in unexpected way
-                eprintln!("\tclient disconnected: broken pipe");
+                error!("[outer server] client disconnected: broken pipe");
                 break;
               }
             }
@@ -69,14 +61,14 @@ impl OuterService for MyOuterService {
             match server_sender.send(Err(err)).await {
               Ok(_) => (),
               Err(_err) => {
-                error!("response dropped");
+                error!("[outer server] response dropped");
                 break;
               }
             }
           }
         }
       }
-      println!("\tstream ended");
+      println!("[outer server] stream ended");
     });
 
     let out_stream = ReceiverStream::new(server_receiver);

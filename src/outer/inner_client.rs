@@ -44,7 +44,7 @@ impl InnerClient {
       let outbound = async_stream::stream! {
         println!("[inner client] receiver start");
         while let Some(message) = receiver.recv().await {
-          println!("[inner client] received");
+          println!("[inner client] received message: {}", message);
             let request = TalkBetweenServicesRequest {
               msg: message.to_string(),
             };

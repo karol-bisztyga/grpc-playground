@@ -40,10 +40,6 @@ impl InnerService for MyInnerService {
     let (server_sender, server_receiver) =
       mpsc::channel(MPSC_CHANNEL_BUFFER_CAPACITY);
 
-    // this spawn here is required if you want to handle connection error.
-    // If we just map `in_stream` and write it back as `out_stream` the `out_stream`
-    // will be drooped when connection error occurs and error will never be propagated
-    // to mapped version of `in_stream`.
     tokio::spawn(async move {
       while let Some(request_result) = in_stream.next().await {
         match request_result {
@@ -53,9 +49,7 @@ impl InnerService for MyInnerService {
           Err(err) => {
             if let Some(io_err) = match_for_io_error(&err) {
               if io_err.kind() == ErrorKind::BrokenPipe {
-                // here you can handle special case when client
-                // disconnected in unexpected way
-                eprintln!("\tclient disconnected: broken pipe");
+                error!("\tclient disconnected: broken pipe");
                 break;
               }
             }
