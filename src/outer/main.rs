@@ -2,6 +2,9 @@ use tonic::transport::Server;
 
 #[path = "../constants.rs"]
 mod constants;
+#[path = "../tools.rs"]
+mod tools;
+
 mod inner_client;
 mod service;
 

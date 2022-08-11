@@ -4,8 +4,9 @@ mod proto {
 
 use crate::constants::MPSC_CHANNEL_BUFFER_CAPACITY;
 use crate::inner_client::InnerClient;
+use crate::tools::match_for_io_error;
 use futures::Stream;
-use std::{error::Error, io::ErrorKind, pin::Pin};
+use std::{io::ErrorKind, pin::Pin};
 use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 use tonic::{Request, Response, Status, Streaming};
@@ -21,29 +22,6 @@ use proto::{
 type TalkWithClientResult<T> = Result<Response<T>, Status>;
 type ResponseStream =
   Pin<Box<dyn Stream<Item = Result<TalkWithClientResponse, Status>> + Send>>;
-
-fn match_for_io_error(err_status: &Status) -> Option<&std::io::Error> {
-  let mut err: &(dyn Error + 'static) = err_status;
-
-  loop {
-    if let Some(io_err) = err.downcast_ref::<std::io::Error>() {
-      return Some(io_err);
-    }
-
-    // h2::Error do not expose std::io::Error with `source()`
-    // https://github.com/hyperium/h2/pull/462
-    if let Some(h2_err) = err.downcast_ref::<h2::Error>() {
-      if let Some(io_err) = h2_err.get_io() {
-        return Some(io_err);
-      }
-    }
-
-    err = match err.source() {
-      Some(err) => err,
-      None => return None,
-    };
-  }
-}
 
 #[derive(Debug)]
 pub struct MyOuterService {
