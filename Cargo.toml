@@ -6,6 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
+name = "inner"
+path = "src/inner/main.rs"
+
+[[bin]]
 name = "outer"
 path = "src/outer/main.rs"
 

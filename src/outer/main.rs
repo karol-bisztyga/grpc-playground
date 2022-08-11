@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       .check_connection()
       .await
       .expect("could not successfully connect to the inner server");
-    println!("done!");
+    println!("...done!");
   }
 
   let server = MyOuterService {};

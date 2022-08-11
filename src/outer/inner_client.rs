@@ -6,7 +6,8 @@ mod proto {
 pub struct InnerClient {}
 
 use crate::constants::{
-  CLIENT_HOSTNAME, MPSC_CHANNEL_BUFFER_CAPACITY, OUTER_SERVER_PORT,
+  CLIENT_HOSTNAME, INNER_SERVER_PORT, MPSC_CHANNEL_BUFFER_CAPACITY,
+  OUTER_SERVER_PORT,
 };
 
 use tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -21,8 +22,7 @@ impl InnerClient {
   pub async fn check_connection(
     &self,
   ) -> Result<(), Box<dyn std::error::Error>> {
-    let address = format!("{}:{}", CLIENT_HOSTNAME, OUTER_SERVER_PORT);
-    println!("[inner client] initializing {}", address);
+    let address = format!("{}:{}", CLIENT_HOSTNAME, INNER_SERVER_PORT);
     InnerServiceClient::connect(address).await?;
 
     Ok(())
@@ -44,7 +44,7 @@ impl InnerClient {
     let outbound = async_stream::stream! {
       println!("[inner client] receiver start");
       while let Some(message) = receiver.recv().await {
-        println!("[inner client] received: {}", message);
+        println!("[inner client] received");
           let request = TalkBetweenServicesRequest {
             msg: message.to_string(),
           };
@@ -53,7 +53,10 @@ impl InnerClient {
       println!("[inner client] receiver end");
     };
 
-    let response = client.talk_between_services(Request::new(outbound)).await?;
+    let response = client
+      .talk_between_services(Request::new(outbound))
+      .await
+      .unwrap();
     let mut inbound = response.into_inner();
     while let Some(response) = inbound.message().await? {
       println!("[inner client] got response: {}", response.msg);
