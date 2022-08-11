@@ -16,7 +16,7 @@ mod client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-  const N_CLIENTS: usize = 5;
+  const N_CLIENTS: usize = 20;
   println!("starting {} clients", N_CLIENTS);
 
   let mut data = vec![];

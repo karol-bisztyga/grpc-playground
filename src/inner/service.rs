@@ -34,7 +34,7 @@ impl InnerService for MyInnerService {
     &self,
     req: Request<Streaming<TalkBetweenServicesRequest>>,
   ) -> TalkWithClientResult<ResponseStream> {
-    println!("talk between services client start");
+    println!("talk between services server start");
 
     let mut in_stream = req.into_inner();
     let (server_sender, server_receiver) =
