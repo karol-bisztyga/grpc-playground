@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BaseReactor.h"
+#include "Worker.h"
 
 #include <grpcpp/grpcpp.h>
 
@@ -92,23 +93,25 @@ template <class Request, class Response>
 void ServerBidiReactorBase<Request, Response>::terminate(
     ServerBidiReactorStatus status) {
   this->setStatus(status);
-  try {
+  Worker::getInstance().schedule([this](){
     this->terminateCallback();
     this->validate();
-  } catch (std::runtime_error &e) {
-    this->setStatus(ServerBidiReactorStatus(
-        grpc::Status(grpc::StatusCode::INTERNAL, e.what())));
-  }
-  if (this->statusHolder->state != ReactorState::RUNNING) {
-    return;
-  }
-  if (this->getStatus().sendLastResponse) {
-    this->StartWriteAndFinish(
-        &this->response, grpc::WriteOptions(), this->getStatus().status);
-  } else {
-    this->Finish(this->getStatus().status);
-  }
-  this->statusHolder->state = ReactorState::TERMINATED;
+  }, [this](std::unique_ptr<std::string> err) {
+    if (err != nullptr) {
+      this->setStatus(ServerBidiReactorStatus(
+        grpc::Status(grpc::StatusCode::INTERNAL, std::string(*err))));
+    }
+    if (this->statusHolder->state != ReactorState::RUNNING) {
+      return;
+    }
+    if (this->getStatus().sendLastResponse) {
+      this->StartWriteAndFinish(
+          &this->response, grpc::WriteOptions(), this->getStatus().status);
+    } else {
+      this->Finish(this->getStatus().status);
+    }
+    this->statusHolder->state = ReactorState::TERMINATED;
+  });
 }
 
 template <class Request, class Response>
